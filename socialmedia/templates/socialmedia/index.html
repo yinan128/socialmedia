@@ -23,7 +23,7 @@
             </div>
             <div class="create">
                 <div class="profile-photo">
-                    <img src="./images/profile-1.jpg">
+                    <img src={{picture_link}}>
                 </div>
             </div>
         </div>
@@ -36,22 +36,22 @@
             <div class="left">
                 <a class="profile">
                     <div class="profile-photo">
-                        <img src="./images/profile-1.jpg">
+                        <img src={{picture_link}}>
                     </div>
                     <div class="handle">
-                        <h4>Mr Doge</h4>
+                        <h4>{{first_name}} {{last_name}}</h4>
                         <p class="text-muted">
-                            @doge
+                            @{{username}}
                         </p>
                     </div>
                 </a>
 
                 <!-------------------- SIDEBAR ------------------------->
                 <div class="sidebar">
-                    <a class="menu-item">
+                    <a class="menu-item active">
                         <span><i class="uil uil-compass"></i></span><h3>Global Channel</h3>
                     </a>
-                    <a class="menu-item active">
+                    <a class="menu-item">
                         <span><i class="uil uil-home"></i></span><h3>Local Channel</h3>
                     </a>
                     <a class="menu-item">

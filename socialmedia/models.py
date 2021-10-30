@@ -28,6 +28,7 @@ class Profile(models.Model):
     user = models.ForeignKey(User, default=None, on_delete=models.PROTECT)
     first_name = models.CharField(max_length=30)
     last_name = models.CharField(max_length=30)
+    picture = models.TextField(null=True, blank=True)
     # blacklist = models.ManyToManyField(User)
     # following = models.ManyToManyField(User)
     groups = models.ManyToManyField(Group)

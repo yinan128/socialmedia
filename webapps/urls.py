@@ -15,10 +15,14 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.contrib.auth import views as auth_views
 from socialmedia import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', views.global_stream),
+    path('oauth/', include('social_django.urls', namespace='social')),
+    path('logout', auth_views.logout_then_login, name='logout'),
     path('socialmedia/', include('socialmedia.urls'))
 ]
+  
