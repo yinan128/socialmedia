@@ -11,14 +11,18 @@ class Comment(models.Model):
     time = models.DateTimeField()
 
 
+# geo ref: https://stackoverflow.com/questions/50626626/how-to-save-html5-geolocation-data-to-python-django-admin
 class Post(models.Model):
     user = models.ForeignKey(User, default=None, on_delete=models.PROTECT)
     text = models.CharField(max_length=200)
     image = models.FileField(blank=True)
     content_type = models.CharField(max_length=50)
     font = models.CharField(max_length=50)
-    time = models.DateTimeField()
+    time = models.DateTimeField(blank=True)
     comment = models.ManyToManyField(Comment)
+    latitude = models.FloatField(default=0.0)
+    longitude = models.FloatField(default=0.0)
+
 
 class Group(models.Model):
     name: models.CharField(max_length=40)

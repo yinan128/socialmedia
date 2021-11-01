@@ -1,4 +1,4 @@
-// SIDEBAR 
+// SIDEBAR
 const menuItems = document.querySelectorAll('.menu-item');
 
 // MESSAGES
@@ -224,5 +224,108 @@ Bg3.addEventListener('click', () => {
     changeBG();
 })
 
+
+
+// ======================== POST =========================
+
+function getLocation() {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(makePost)
+    } else {
+        console.log("Geolocation is not supported by this browser.");
+    }
+}
+
+// // todo: this method is to get accurate location, but not working for some PC.
+// function getLocation() {
+//     if (navigator.geolocation) {
+//         getAccurateLocation(makePost, function(err){console.log("err happens")}, function (loc){console.log("in progress")}, {desiredAccuracy:20, maxWait:15000})
+//     } else {
+//         console.log("Geolocation is not supported by this browser.");
+//     }
+// }
+
+
+function makePost(position) {
+    let post_bar = document.getElementById("create-post")
+    let post_text = post_bar.value
+    post_bar.value = ""
+
+    $.ajax({
+        url: "/socialmedia/post",
+        type: "POST",
+        data: {
+            text: post_text,
+            lat: position.coords.latitude,
+            long: position.coords.longitude,
+            csrfmiddlewaretoken: getCSRFToken()
+        },
+    })
+}
+
+
+// ======================== HELPERS =========================
+function getCSRFToken() {
+    let cookies = document.cookie.split(";")
+    for (let i = 0; i < cookies.length; i++) {
+        let c = cookies[i].trim()
+        if (c.startsWith("csrftoken=")) {
+            return c.substring("csrftoken=".length, c.length)
+        }
+    }
+    return "unknown";
+}
+
+
+function getAccurateLocation(geolocationSuccess, geolocationError, geoprogress, options) {
+    var lastCheckedPosition,
+        locationEventCount = 0,
+        watchID,
+        timerID;
+
+    options = options || {};
+
+    var checkLocation = function (position) {
+        lastCheckedPosition = position;
+        locationEventCount = locationEventCount + 1;
+        console.log(locationEventCount)
+        console.log(lastCheckedPosition)
+        // We ignore the first event unless it's the only one received because some devices seem to send a cached
+        // location even when maxaimumAge is set to zero
+        if ((position.coords.accuracy <= options.desiredAccuracy) && (locationEventCount > 1)) {
+            clearTimeout(timerID);
+            navigator.geolocation.clearWatch(watchID);
+            foundPosition(position);
+        } else {
+            geoprogress(position);
+        }
+    };
+
+    var stopTrying = function () {
+        navigator.geolocation.clearWatch(watchID);
+        foundPosition(lastCheckedPosition);
+    };
+
+    var onError = function (error) {
+        clearTimeout(timerID);
+        navigator.geolocation.clearWatch(watchID);
+        geolocationError(error);
+    };
+
+    var foundPosition = function (position) {
+        console.log("found.")
+        geolocationSuccess(position);
+    };
+
+    if (!options.maxWait)            options.maxWait = 10000; // Default 10 seconds
+    if (!options.desiredAccuracy)    options.desiredAccuracy = 20; // Default 20 meters
+    if (!options.timeout)            options.timeout = options.maxWait; // Default to maxWait
+
+    options.maximumAge = 0; // Force current locations only
+    options.enableHighAccuracy = true; // Force high accuracy (otherwise, why are you using this function?)
+
+    watchID = navigator.geolocation.watchPosition(checkLocation, onError, options);
+    timerID = setTimeout(stopTrying, options.maxWait); // Set a timeout that will abandon the location loop
+};
 
 // END
