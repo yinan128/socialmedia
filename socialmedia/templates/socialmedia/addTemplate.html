@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+
+
+<form method="post" action="{% url 'newPost' %}"> {% csrf_token %}
+    {{ form.media }}
+    {{ form.as_p }}
+    <button id="id_post_button">Submit</button>
+</form>
+
+
+{% for post in posts %}
+    <div>{{ post.text | safe }}</div>
+{% endfor %}
+
+
+</body>
+</html>
+
