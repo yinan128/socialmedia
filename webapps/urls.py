@@ -23,6 +23,7 @@ urlpatterns = [
     path('', views.global_stream),
     path('oauth/', include('social_django.urls', namespace='social')),
     path('logout', auth_views.logout_then_login, name='logout'),
+    path('local_news', views.local_news, name='news')
     path('socialmedia/', include('socialmedia.urls'))
 ]
   

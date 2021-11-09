@@ -22,6 +22,7 @@ class Post(models.Model):
     comment = models.ManyToManyField(Comment)
     latitude = models.FloatField(default=0.0)
     longitude = models.FloatField(default=0.0)
+    city = models.CharField(max_length=50)
 
 
 class Group(models.Model):
