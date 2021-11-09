@@ -15,15 +15,18 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.conf.urls import url
 from django.contrib.auth import views as auth_views
 from socialmedia import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', views.global_stream),
+    path('', views.local_stream),
     path('oauth/', include('social_django.urls', namespace='social')),
     path('logout', auth_views.logout_then_login, name='logout'),
-    path('local_news', views.local_news, name='news')
+    path('local_stream', views.local_stream, name='local'),
+    path('socialnetwork/get-local/<longitude>/<latitude>/', views.get_local),
+    url(r'profile-photo/(?P<id>\d+)$', views.photo, name='photo'),
     path('socialmedia/', include('socialmedia.urls'))
 ]
   

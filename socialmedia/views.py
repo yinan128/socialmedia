@@ -11,16 +11,18 @@ from mimetypes import guess_type
 def get_local(request, longitude, latitude):
     response_data = []
     user = request.user
-    longitude = int(float(longitude) / 10000)
-    latitude = int(float(latitude) / 10000)
+    print('longitude:', longitude, 'latitude:', latitude)
+    longitude = str(float(longitude) / 10000)
+    latitude = str(float(latitude) / 10000)
     geolocator = Nominatim(user_agent="geoapiExercises")
     location = geolocator.reverse(latitude+","+longitude)
     city = location.raw['address']['city']
+    print('city:', city)
     posts = Post.objects.filter(city__in=[city]).order_by("-time")
     
     for post in posts:
         my_post = {
-            'user_id': post.user.id,
+            'user_id': post.user.first_name + ' ' + post.user.last_name,
             'post_id': post.id,
             'text': post.text,
             'content_type': post.content_type,
@@ -33,7 +35,7 @@ def get_local(request, longitude, latitude):
         my_comments = []
         for comment in comments:
             my_comment = {
-                'user_id': comment.user.id,
+                'user_id': comment.user.first_name + ' ' + comment.user.last_name,
                 'id': comment.id,
                 'text': comment.text,
                 'time': comment.time.strftime("%m/%d/%Y %I:%M %p")  
@@ -45,7 +47,8 @@ def get_local(request, longitude, latitude):
             'comments': my_comments
         }
         response_data.append(my_post)
-
+    
+    print('response_data:', response_data)
     response_json = json.dumps(response_data)
     response = HttpResponse(response_json, content_type='application/json')
     response['Access-Control-Allow-Origin'] = '*'
@@ -111,6 +114,7 @@ def local_stream(request):
         'username': request.user.username,
         'picture_link': profile.picture,
     }
+    print('before get')
 
     if request.method == 'GET':
         return render(request, 'socialmedia/index.html', context=context)

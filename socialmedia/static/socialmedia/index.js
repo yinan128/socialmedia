@@ -332,15 +332,19 @@ function getAccurateLocation(geolocationSuccess, geolocationError, geoprogress, 
 // END
 
 // ======================== LOCAL STREAM =========================
+console.log("onload!")
+window.onload = function() {getLocation(); loadPosts();}
+window.setInterval(loadPosts, 50000)
 function loadPosts(position) {
     let request = new XMLHttpRequest()
     request.onreadystatechange = function() {
             if (request.readyState != 4) return
             updatePage(request)
     }
-    let lat = position.coords.latitude.toString()
-    let lon = position.coords.longitude.toString()
-    request.open("GET", "/socialnetwork/local_stream/"+lon+"/"+lat+"/", true)
+    let lat = parseInt(10000 * position.coords.latitude).toString()
+    let lon = parseInt(10000 * position.coords.longitude).toString()
+    console.log("/socialnetwork/get-local/"+lon+"/"+lat+"/")
+    request.open("GET", "/socialnetwork/get-local/"+lon+"/"+lat+"/", true)
     request.send()
 }
 
@@ -381,7 +385,9 @@ function updateList(items) {
     }
 
     for (let i=0; i<items.length; i++){
-        let item = items[i]
+        let item = items[i]['post']
+        console.log(items[i])
+        console.log(item)
         let element = document.createElement("li")
 
         ingo = "<div class=\"ingo\"> <h3>" + item.user_id + " <small>" + item.city + item.time + "</small> </div>"
@@ -407,6 +413,3 @@ function updateList(items) {
         list.appendChild(element)
     }
 }
-
-window.onload = loadPosts()
-window.setInterval(loadPosts, 50000)
