@@ -145,14 +145,12 @@
             <div class="middle">
                 <div class="create-post">
 
-
-
                     <div id="editor">
                     </div>
                     <script>
                         let editor
                         ClassicEditor
-                            .create( document.querySelector( '#editor' ) )
+                            .create( document.querySelector( '#editor' ))
                             .then( newEditor => {
                                 editor = newEditor;
                             } )
@@ -659,7 +657,7 @@
     </div>
 </div>
 
-<script src="socialmedia/index.js"></script>
+<!-- <script src="socialmedia/index.js"></script> -->
 <script>
     //Call getList() as soon as page is finished loading to display the to do list
     window.onload = getPosts;

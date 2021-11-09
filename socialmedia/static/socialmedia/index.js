@@ -169,11 +169,6 @@ colorPalette.forEach(color => {
     })
 })
 
-
-
-
-
-
 // theme BACKGROUND values
 let lightColorLightness;
 let whiteColorLightness;
@@ -335,6 +330,18 @@ function getPosts() {
         success: updatePosts,
         error: updateError
     })
+}
+
+import SpecialCharacters from '@ckeditor/ckeditor5-special-characters/src/specialcharacters';
+import SpecialCharactersEssentials from '@ckeditor/ckeditor5-special-characters/src/specialcharactersessentials';
+
+function SpecialCharactersArrowsExtended( editor ) {
+    editor.plugins.get( 'SpecialCharacters' ).addItems( 'Arrows', [
+        { title: 'simple arrow left', character: '←' },
+        { title: 'simple arrow up', character: '↑' },
+        { title: 'simple arrow right', character: '→' },
+        { title: 'simple arrow down', character: '↓' }
+    ] );
 }
 
 // END

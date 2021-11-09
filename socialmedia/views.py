@@ -14,8 +14,6 @@ def update_user_social_data(strategy, *args, **kwargs):
         response = kwargs['response']
         backend = kwargs['backend']
         user = kwargs['user']
-        print("HAHAHAHAHAHAHA")
-        print(response)
 
         if response['picture']:
             url = response['picture']
