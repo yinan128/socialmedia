@@ -5,6 +5,7 @@ from django.urls import reverse
 from django.utils import timezone
 from socialmedia.models import *
 from socialmedia.forms import *
+from geopy.geocoders import Nominatim
 
 import json
 
@@ -85,6 +86,9 @@ def post_action(request):
 def get_posts(request):
     response_data = []
     for post in Post.objects.all().order_by('time'):
+        geolocator = Nominatim(user_agent="geoapiExercises")
+        location = geolocator.reverse(str(post.latitude) + "," + str(post.longitude))
+        city = location.raw['address']['city']
         my_post = {
             'type': 'post',
             'id': post.id,
@@ -94,7 +98,8 @@ def get_posts(request):
             'text': post.text,
             'created_time': post.time.isoformat(),
             'longitude': post.longitude,
-            'latitude': post.latitude
+            'latitude': post.latitude,
+            'city': city
         }
         response_data.append(my_post)
 

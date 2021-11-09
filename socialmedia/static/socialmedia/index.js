@@ -281,7 +281,7 @@ function postFormatter(response) {
     result = '<div class="feed"><div class="head"><div class="user"><div class="profile-photo">'
         + '<img src="./images/profile-' + response.user + '.jpg"></div><div class="ingo">'
         + '<h3>' + response.firstname + ' ' + response.lastname + '</h3>'
-        + '<small>' + response.longitude + ',' + response.latitude + ', 15 MINUTES AGO</small>'
+        + '<small>' + response.city + ', 15 MINUTES AGO</small>'
         + '</div></div><span class="edit"><i class="uil uil-ellipsis-h"></i></span></div>'
         + '<div class="text" id="id_post_div_' + response.id + '">' + response.text + '</div>'
         + '<div class="action-buttons"><div class="interaction-buttons"><span><i class="uil uil-heart"></i></span><span><i class="uil uil-comment-dots"></i></span><span><i class="uil uil-share-alt"></i></span></div><div class="bookmark"><span><i class="uil uil-bookmark-full"></i></span></div></div>'
