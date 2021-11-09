@@ -10,3 +10,6 @@ Besides,
 `pip install python-social-auth`
 (these 3 maybe needed)
 
+To support rich text editor
+`pip install django-ckeditor`
+
