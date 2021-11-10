@@ -219,6 +219,62 @@ Bg3.addEventListener('click', () => {
     changeBG();
 })
 
+// ======================== SWITCH CHANNELS =========================
+function switchToLocalChannel() {
+    // delete all middle part.
+    document.getElementById("middlePart").innerHTML = '<div class="feeds" id="allNews"></div>'
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(acquireLocalNewsViaGeoLocation)
+    } else {
+        console.log("Geolocation is not supported by this browser.");
+    }
+}
+
+function acquireLocalNewsViaGeoLocation(position) {
+    $.ajax({
+        url: "/socialmedia/get-local-news",
+        type: "POST",
+        data: {
+            lat: position.coords.latitude,
+            long: position.coords.longitude,
+            csrfmiddlewaretoken: getCSRFToken()
+        },
+        success: updateNews,
+        error: updateError
+    })
+}
+
+
+
+
+function switchToGlobalChannel() {
+    // delete all middle part.
+    if (document.getElementById("create-post") != null) return
+    document.getElementById("middlePart").innerHTML = '<div class="middle" id="middlePart"><div class="create-post" id="create-post"><div id="editor"><script>let editor</script></div><input type="submit" value="Post" class="btn btn-primary btn-floatright" onclick="postAction()"></div>' +
+        '<div class="feeds" id="allFeeds"></div>'
+
+
+    ClassicEditor
+        .create( document.querySelector( '#editor' ))
+        .then( newEditor => {
+            editor = newEditor;
+        } )
+        .catch( error => {
+            console.error( error );
+        } );
+
+
+    $.ajax({
+        url: "/socialmedia/get-posts",
+        type: "GET",
+        success: updatePosts,
+        error: updateError
+    })
+
+}
+
+
+
 
 
 // ======================== POST =========================
@@ -270,6 +326,18 @@ function updatePosts(response) {
         }
     })
 }
+
+function updateNews(response) {
+    $(response).each(function() {
+        $("#allNews").append(newsFormatter(this))
+    })
+}
+
+function newsFormatter(news) {
+    result = '<div class="feed"><div class="text">' + news.title +'</div></div>'
+    return result
+}
+
 
 // ======================== Text Formatter =========================
 function postFormatter(response) {

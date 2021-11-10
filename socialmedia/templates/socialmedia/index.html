@@ -54,10 +54,10 @@
 
                 <!-------------------- SIDEBAR ------------------------->
                 <div class="sidebar">
-                    <a class="menu-item active">
+                    <a class="menu-item active" onclick="switchToGlobalChannel()" id="globalChannel">
                         <span><i class="uil uil-compass"></i></span><h3>Global Channel</h3>
                     </a>
-                    <a class="menu-item">
+                    <a class="menu-item" onclick="switchToLocalChannel()" id="localChannel">
                         <span><i class="uil uil-home"></i></span><h3>Local Channel</h3>
                     </a>
                     <a class="menu-item">
@@ -142,8 +142,8 @@
 
 
             <!--======================== MIDDLE ==========================-->
-            <div class="middle">
-                <div class="create-post">
+            <div class="middle" id="middlePart">
+                <div class="create-post" id="create-post">
 
                     <div id="editor">
                     </div>
@@ -249,210 +249,6 @@
                             <p>Liked by <b>UserD</b> and <b>3 others</b></p>
                         </div>
                         <div class="comments text-muted">View all 3 comments</div>
-                    </div>
-                    <!---------------- END OF FEED ----------------->
-                    <!------------------- FEED 3 --------------------->
-                    <div class="feed">
-                        <div class="head">
-                            <div class="user">
-                                <div class="profile-photo">
-                                    <img src="./images/profile-15.jpg">
-                                </div>
-                                <div class="ingo">
-                                    <h3>UserD</h3>
-                                    <small>Ghana, 1 MINUTES AGO</small>
-                                </div>
-                            </div>
-                            <span class="edit">
-                                <i class="uil uil-ellipsis-h"></i>
-                            </span>
-                        </div>
-                        <div class="text"> Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text.</div>
-
-
-                        <div class="action-buttons">
-                            <div class="interaction-buttons">
-                                <span><i class="uil uil-heart"></i></span>
-                                <span><i class="uil uil-comment-dots"></i></span>
-                                <span><i class="uil uil-share-alt"></i></span>
-                            </div>
-                            <div class="bookmark">
-                                <span><i class="uil uil-bookmark-full"></i></span>
-                            </div>
-                        </div>
-
-                        <div class="liked-by">
-                            <span><img src="./images/profile-10.jpg"></span>
-                            <span><img src="./images/profile-4.jpg"></span>
-                            <span><img src="./images/profile-15.jpg"></span>
-                            <p>Liked by <b>UserE</b> and <b>23 others</b></p>
-                        </div>
-                        <div class="comments text-muted">View all 7 comments</div>
-                    </div>
-                    <!---------------- END OF FEED ----------------->
-                    <!------------------- FEED 4 --------------------->
-                    <div class="feed">
-                        <div class="head">
-                            <div class="user">
-                                <div class="profile-photo">
-                                    <img src="./images/profile-16.jpg">
-                                </div>
-                                <div class="ingo">
-                                    <h3>UserL</h3>
-                                    <small>Dubai, 15 MINUTES AGO</small>
-                                </div>
-                            </div>
-                            <span class="edit">
-                                <i class="uil uil-ellipsis-h"></i>
-                            </span>
-                        </div>
-
-                        <div class="text"> Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text.</div>
-                        <div class="photo">
-                            <img src="./images/feed-4.jpg">
-                        </div>
-
-                        <div class="action-buttons">
-                            <div class="interaction-buttons">
-                                <span><i class="uil uil-heart"></i></span>
-                                <span><i class="uil uil-comment-dots"></i></span>
-                                <span><i class="uil uil-share-alt"></i></span>
-                            </div>
-                            <div class="bookmark">
-                                <span><i class="uil uil-bookmark-full"></i></span>
-                            </div>
-                        </div>
-
-                        <div class="liked-by">
-                            <span><img src="./images/profile-10.jpg"></span>
-                            <span><img src="./images/profile-4.jpg"></span>
-                            <span><img src="./images/profile-15.jpg"></span>
-                            <p>Liked by <b>UserE</b> and <b>3 others</b></p>
-                        </div>
-                        <div class="comments text-muted">View all 7 comments</div>
-                    </div>
-                    <!---------------- END OF FEED ----------------->
-                    <!------------------- FEED 5 --------------------->
-                    <div class="feed">
-                        <div class="head">
-                            <div class="user">
-                                <div class="profile-photo">
-                                    <img src="./images/profile-16.jpg">
-                                </div>
-                                <div class="ingo">
-                                    <h3>UserC</h3>
-                                    <small>Dubai, 15 MINUTES AGO</small>
-                                </div>
-                            </div>
-                            <span class="edit">
-                                <i class="uil uil-ellipsis-h"></i>
-                            </span>
-                        </div>
-
-                        <div class="photo">
-                            <img src="./images/feed-5.jpg">
-                        </div>
-
-                        <div class="action-buttons">
-                            <div class="interaction-buttons">
-                                <span><i class="uil uil-heart"></i></span>
-                                <span><i class="uil uil-comment-dots"></i></span>
-                                <span><i class="uil uil-share-alt"></i></span>
-                            </div>
-                            <div class="bookmark">
-                                <span><i class="uil uil-bookmark-full"></i></span>
-                            </div>
-                        </div>
-
-                        <div class="liked-by">
-                            <span><img src="./images/profile-10.jpg"></span>
-                            <span><img src="./images/profile-4.jpg"></span>
-                            <span><img src="./images/profile-15.jpg"></span>
-                            <p>Liked by <b>Ernest Achiever</b> and <b>3 others</b></p>
-                        </div>
-                        <div class="comments text-muted">View all 27 comments</div>
-                    </div>
-                    <!---------------- END OF FEED ----------------->
-                    <!------------------- FEED 6 --------------------->
-                    <div class="feed">
-                        <div class="head">
-                            <div class="user">
-                                <div class="profile-photo">
-                                    <img src="./images/profile-17.jpg">
-                                </div>
-                                <div class="ingo">
-                                    <h3>UserM</h3>
-                                    <small>Dubai, 15 MINUTES AGO</small>
-                                </div>
-                            </div>
-                            <span class="edit">
-                                <i class="uil uil-ellipsis-h"></i>
-                            </span>
-                        </div>
-
-                        <div class="photo">
-                            <img src="./images/feed-6.jpg">
-                        </div>
-
-                        <div class="action-buttons">
-                            <div class="interaction-buttons">
-                                <span><i class="uil uil-heart"></i></span>
-                                <span><i class="uil uil-comment-dots"></i></span>
-                                <span><i class="uil uil-share-alt"></i></span>
-                            </div>
-                            <div class="bookmark">
-                                <span><i class="uil uil-bookmark-full"></i></span>
-                            </div>
-                        </div>
-
-                        <div class="liked-by">
-                            <span><img src="./images/profile-10.jpg"></span>
-                            <span><img src="./images/profile-4.jpg"></span>
-                            <span><img src="./images/profile-15.jpg"></span>
-                            <p>Liked by <b>UserA</b> and <b>23 others</b></p>
-                        </div>
-                        <div class="comments text-muted">View all 27 comments</div>
-                    </div>
-                    <!---------------- END OF FEED ----------------->
-                    <!------------------- FEED 7 --------------------->
-                    <div class="feed">
-                        <div class="head">
-                            <div class="user">
-                                <div class="profile-photo">
-                                    <img src="./images/profile-18.jpg">
-                                </div>
-                                <div class="ingo">
-                                    <h3>UserJ</h3>
-                                    <small>Dubai, 15 MINUTES AGO</small>
-                                </div>
-                            </div>
-                            <span class="edit">
-                                <i class="uil uil-ellipsis-h"></i>
-                            </span>
-                        </div>
-
-                        <div class="photo">
-                            <img src="./images/feed-7.jpg">
-                        </div>
-
-                        <div class="action-buttons">
-                            <div class="interaction-buttons">
-                                <span><i class="uil uil-heart"></i></span>
-                                <span><i class="uil uil-comment-dots"></i></span>
-                                <span><i class="uil uil-share-alt"></i></span>
-                            </div>
-                            <div class="bookmark">
-                                <span><i class="uil uil-bookmark-full"></i></span>
-                            </div>
-                        </div>
-
-                        <div class="liked-by">
-                            <span><img src="./images/profile-10.jpg"></span>
-                            <span><img src="./images/profile-4.jpg"></span>
-                            <span><img src="./images/profile-15.jpg"></span>
-                            <p>Liked by <b>UserE</b> and <b>3 others</b></p>
-                        </div>
-                        <div class="comments text-muted">View all 277 comments</div>
                     </div>
                     <!---------------- END OF FEED ----------------->
                 </div>

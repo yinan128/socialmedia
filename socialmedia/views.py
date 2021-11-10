@@ -6,8 +6,10 @@ from django.utils import timezone
 from socialmedia.models import *
 from socialmedia.forms import *
 from geopy.geocoders import Nominatim
+from newsapi import NewsApiClient
 
 import json
+
 
 def update_user_social_data(strategy, *args, **kwargs):
     try:
@@ -29,6 +31,7 @@ def update_user_social_data(strategy, *args, **kwargs):
     except:
         pass
 
+
 # Create your views here.
 @login_required()
 def global_stream(request):
@@ -47,10 +50,9 @@ def global_stream(request):
     context['form'] = PostForm()
     return render(request, 'socialmedia/index.html', context=context)
 
+
 def login_action(request):
     return render(request, 'socialmedia/login.html')
-
-
 
 
 def post_action(request):
@@ -67,18 +69,17 @@ def post_action(request):
         return _my_json_error_response("Invalid post.", status=400)
 
     post = Post(
-        user = request.user,
-        text = request.POST['text'],
-        time = timezone.now(),
-        latitude = request.POST['lat'],
-        longitude = request.POST['long']
+        user=request.user,
+        text=request.POST['text'],
+        time=timezone.now(),
+        latitude=request.POST['lat'],
+        longitude=request.POST['long']
     )
     print(post.longitude)
     print(post.latitude)
     post.save()
 
     return get_posts(request)
-
 
 
 def get_posts(request):
@@ -107,6 +108,27 @@ def get_posts(request):
     return response
 
 
+# todo: error handling.
+def get_news(request):
+    response_data = []
+    geolocator = Nominatim(user_agent="geoapiExercises")
+    location = geolocator.reverse(str(request.POST['lat']) + "," + str(request.POST['long']))
+    city = location.raw['address']['city']
+    i = 0
+    for title, publish, description, url in getNewsFromCity(city):
+        response_data.append({
+            "title": title,
+            "publish": publish,
+            "description": description,
+            "url": url
+        })
+        i += 1
+        if i == 10: break
+
+    response_json = json.dumps(response_data)
+    response = HttpResponse(response_json, content_type='application/json')
+    response['Access-Control-Allow-Origin'] = '*'
+    return response
 
 
 def addPost(request):
@@ -125,8 +147,22 @@ def addPost(request):
     post_form.save()
     return redirect(reverse('global_stream'))
 
+
 def _my_json_error_response(message, status=200):
     # You can create your JSON by constructing the string representation yourself (or just use json.dumps)
     response_json = '{ "error": "' + message + '" }'
     return HttpResponse(response_json, content_type='application/json', status=status)
 
+
+############# Helpers ################
+def getNewsFromCity(city):
+    newsapi = NewsApiClient(api_key='908bae16c1a84c37b739cc24cd7314a9')
+
+    all_articles = newsapi.get_everything(
+        qintitle=city,
+        language='en',
+        sort_by='publishedAt'
+    )
+
+    for article in all_articles['articles']:
+        yield article['title'], article['publishedAt'], article['description'], article['url']
