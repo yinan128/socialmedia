@@ -13,3 +13,6 @@ Besides,
 To support rich text editor
 `pip install django-ckeditor`
 
+To support news feed
+`pip install newsapi-python`
+
