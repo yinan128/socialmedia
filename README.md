@@ -16,3 +16,6 @@ To support rich text editor
 To support news feed
 `pip install newsapi-python`
 
+To support geolocation
+`pip install geopy`
+
