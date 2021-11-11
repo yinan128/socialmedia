@@ -168,6 +168,25 @@
 {#                    <input type="submit" value="Post" class="btn btn-primary" onclick="getLocation()">#}
                 </div>
 
+                <!------------------- Visibility Overlay --------------------->
+                <div id="visibility-overlay">
+                    <form id="visibility-form" method="POST" action="{% url 'visibility' %}">
+                        Set Post Visibility:<br>
+                        <input type="hidden" name="post_id" id="post_vis_id" value="0">
+
+                        <input type="radio" id="public_vis" name="post_vis_option" onclick="remove_groups_options()" value="public" checked>
+                        <label for="public_vis">Public</label><br>
+                        <input type="radio" id="private_vis" name="post_vis_option" value="private" onclick="remove_groups_options()">
+                        <label for="private_vis">Private</label><br>
+                        <input type="radio" id="group_vis" name="post_vis_option" onclick="update_groups_options()" value="group">
+                        <label for="group_vis">Group Invisible</label><br>
+
+                        <div id="select-groups">
+                        </div>
+                        <input type="submit" value="Confirm" onsubmit="edit_post_vis()"> 
+                        {% csrf_token %}
+                    </form>
+                </div>
                 <!------------------- FEEDS --------------------->
                 <div class="feeds" id="allFeeds">
                     <!------------------- FEED 1 --------------------->
@@ -182,9 +201,13 @@
                                     <small>Dubai, 15 MINUTES AGO</small>
                                 </div>
                             </div>
-                            <span class="edit">
-                                <i class="uil uil-ellipsis-h"></i>
-                            </span>
+                            <div class="edit">
+                                <button class="uil uil-ellipsis-h"></button>
+                                <div class="edit-dropdown-content">
+                                    <a class="edit-post">Edit</a>
+                                    <a class="set-visib">Visibility</a>
+                                </div>
+                            </div>
                         </div>
                         <div class="text"> Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text.</div>
                         <div class="action-buttons">
@@ -660,9 +683,22 @@
 <!-- <script src="socialmedia/index.js"></script> -->
 <script>
     //Call getList() as soon as page is finished loading to display the to do list
-    window.onload = getPosts;
+    window.onload = function() {
+        getPosts();
+
+        var edit_btns = document.getElementsByClassName("uil-ellipsis-h")
+        for( var i=0; i<edit_btns.length; i++ ) {
+            edit_btns[i].addEventListener('click', show_edit_dropdown)
+        }
+
+        var edit_vis = document.getElementsByClassName("set-visib")
+        for( var i=0; i<edit_vis.length; i++ ) {
+            edit_vis[i].addEventListener('click', show_edit_visibility)
+        }
+
+    }
     //... also call getList every 3 seconds hereafter to update the list
-    window.setInterval(getPosts, 3000);
+    // window.setInterval(getPosts, 3000);
 </script>
 
 </body>

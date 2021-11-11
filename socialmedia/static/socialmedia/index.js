@@ -269,7 +269,92 @@ function updatePosts(response) {
             $("#allFeeds").prepend(postFormatter(this))
         }
     })
+
+    // update edit button with onclick function
+    var edit_btns = document.getElementsByClassName("uil-ellipsis-h")
+    for( var i=0; i<edit_btns.length; i++ ) {
+        edit_btns[i].addEventListener('click', show_edit_dropdown)
+    }
+
+    var edit_vis = document.getElementsByClassName("set-visib")
+    for( var i=0; i<edit_vis.length; i++ ) {
+        edit_vis[i].addEventListener('click', show_edit_visibility)
+    }
 }
+
+function show_edit_dropdown() {
+    var parent_div = this.parentElement
+    parent_div.querySelector(".edit-dropdown-content").classList.toggle("show")
+}
+
+function show_edit_visibility() {
+    var feed_div = $(this).parentsUntil(".feeds", ".feed")[0]
+    var text_div = feed_div.getElementsByClassName("text")[0]
+    var post_id = text_div.id.split("_").at(-1)
+    post_id = parseInt(post_id)
+    overlay_on(post_id)
+}
+
+function update_groups_options() {
+    $.ajax({
+        url: "/socialmedia/get-groups",
+        datatype: "json",
+        success: update_vis_form,
+        error: updateError
+    })
+}
+
+function edit_post_vis() {
+    post_id = parseInt(document.getElementById("post_vis_id").value)
+    console.log("post id is "+post_id)
+    $.ajax({
+        url: "/socialmedia/set-visibility/"+post_id,
+        datatype: "json",
+        success: function() {
+            overlay_off();
+            updatePosts();
+        },
+        error: function() {
+            overlay_off();
+            updateError();
+        },
+    })
+}
+
+function remove_groups_options() {
+    document.getElementById("select-groups").innerHTML = ""
+}
+
+function update_vis_form(response) {
+    var check_div = document.getElementById("select-groups")
+    var innerHtml = ""
+    for(var i=0; i<response.length; i++) {
+        gid = response[i]['group_id']
+        gname = response[i]['group_name']
+        innerHtml += '<input type="checkbox" id="select_group_'+ gid 
+                  + '" name="group_' + i + '" value="' + gid + '">'
+                  + '<label for="select_group_' + gid + '"> '+ gname 
+                  + '</label><br>'
+    }
+    check_div.innerHTML = innerHtml
+}
+
+
+function overlay_on(post_id) {
+    document.getElementById("visibility-overlay").style.display = "block"
+    document.getElementById("post_vis_id").value=post_id
+}
+
+function overlay_off() {
+    document.getElementById("visibility-overlay").style.display = "none"
+}
+
+
+
+
+
+
+
 
 // ======================== Text Formatter =========================
 function postFormatter(response) {
@@ -277,11 +362,15 @@ function postFormatter(response) {
         + '<img src="./images/profile-' + response.user + '.jpg"></div><div class="ingo">'
         + '<h3>' + response.firstname + ' ' + response.lastname + '</h3>'
         + '<small>' + response.city + ', 15 MINUTES AGO</small>'
-        + '</div></div><span class="edit"><i class="uil uil-ellipsis-h"></i></span></div>'
+        + '</div></div><div class="edit"><button class="uil uil-ellipsis-h"></button>'
+        + '<div class="edit-dropdown-content"> <a class="edit-post">Edit</a> '
+        + '<a class="set-visib">Visibility</a></div> </div></div>'
         + '<div class="text" id="id_post_div_' + response.id + '">' + response.text + '</div>'
         + '<div class="action-buttons"><div class="interaction-buttons"><span><i class="uil uil-heart"></i></span><span><i class="uil uil-comment-dots"></i></span><span><i class="uil uil-share-alt"></i></span></div><div class="bookmark"><span><i class="uil uil-bookmark-full"></i></span></div></div>'
         + '<div class="liked-by"><span><img src="./images/profile-10.jpg"></span><span><img src="./images/profile-4.jpg"></span><span><img src="./images/profile-15.jpg"></span><p>Liked by <b>UserC</b> and <b>4 others</b></p></div>'
         + '<div class="comments text-muted">View all 277 comments</div></div>'
+    
+
     return result
 }
 

@@ -1,5 +1,5 @@
 from django.http import HttpResponse
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse
 from django.utils import timezone
@@ -124,6 +124,81 @@ def addPost(request):
     post_form = PostForm(request.POST, instance=post)
     post_form.save()
     return redirect(reverse('global_stream'))
+
+
+def set_post_visibility(request):
+    print("inside set_post_visibility")
+    for key,value in request.POST.items():
+        print("{} {}".format(key,value))
+    pid = request.POST['post_id']
+    post = get_object_or_404(Post, id=pid)
+
+    # Private
+    if(request.POST['post_vis_option'] == "private"):
+        print("-----PRIVATE-----")
+        for grp in Group.objects.all():
+            post.hide_groups.add(get_object_or_404(Group, id=grp.id))
+        return redirect(reverse('global_stream'))
+
+    # Public
+    if(request.POST['post_vis_option'] == "public"):
+        print("-----Public-----")
+        for grp in post.hide_groups.all():
+            grp_obj = get_object_or_404(Group, id=grp.id)
+            post.hide_groups.remove(grp_obj) 
+        return redirect(reverse('global_stream'))
+
+    # Group
+    print("-----Group-----")
+    gid_keys = []
+    for key,value in request.POST.items():
+        if key.startswith("group_"):
+            gid_keys.append(key)
+
+    # Reset all groups
+    for grp in post.hide_groups.all():
+        grp_obj = get_object_or_404(Group, id=grp.id)
+        post.hide_groups.remove(grp_obj) 
+        
+    for key in gid_keys:
+        gid = int(request.POST[key])
+        post.hide_groups.add(get_object_or_404(Group, id=gid))
+
+    return redirect(reverse('global_stream'))
+
+
+def get_groups(request):
+    groups = Group.objects.all()
+    response_data = []
+    print(Group.objects.count())
+    if( Group.objects.count() == 0):
+        response_json = json.dumps(response_data)
+        response = HttpResponse(response_json, content_type='application/json')
+        response['Access-Control-Allow-Origin'] = '*'
+        return response
+    print(groups)
+    for group in groups:
+        users_list = []
+        for user in group.users.all():
+            user_info = {
+                'user_id': user.id
+            }
+            users_list.append(user_info)
+
+        group_info = {
+            'group_id': group.id,
+            'group_name': group.name,
+            'group_users': users_list
+        }
+        response_data.append(group_info)
+    response_json = json.dumps(response_data)
+    response = HttpResponse(response_json, content_type='application/json')
+    response['Access-Control-Allow-Origin'] = '*'
+    return response
+
+
+
+
 
 def _my_json_error_response(message, status=200):
     # You can create your JSON by constructing the string representation yourself (or just use json.dumps)
