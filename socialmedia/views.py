@@ -20,12 +20,10 @@ def get_local(request, longitude, latitude):
     location = geolocator.reverse(latitude+","+longitude)
     city = location.raw['address']['city']
     print('city:', city)
-    posts = Post.objects.filter(city__in=[city]).order_by("-time")
+    posts = Post.objects.filter(city__in=[city]).order_by("time")
 
     for post in posts:
         geolocator = Nominatim(user_agent="geoapiExercises")
-        location = geolocator.reverse(str(post.latitude) + "," + str(post.longitude))
-        city = location.raw['address']['city']
         my_post = {
             'type': 'post',
             'id': post.id,
@@ -36,7 +34,7 @@ def get_local(request, longitude, latitude):
             'created_time': post.time.isoformat(),
             'longitude': post.longitude,
             'latitude': post.latitude,
-            'city': city
+            'city': post.city
         }
         response_data.append(my_post)
 
@@ -44,6 +42,17 @@ def get_local(request, longitude, latitude):
     response = HttpResponse(response_json, content_type='application/json')
     response['Access-Control-Allow-Origin'] = '*'
     return response
+
+@login_required
+def post_photo(request, id):
+    post = get_object_or_404(Post, id=id)
+    image = post.image
+    print('successful in reveiving the request')
+    if not image:
+        raise Http404
+    content_type = guess_type(image.name)
+    print('content_type:', content_type[0])
+    return HttpResponse(image, content_type=content_type[0])
 
 @login_required
 def photo(request, id):
@@ -89,9 +98,8 @@ def global_stream(request):
         'first_name': request.user.first_name,
         'last_name': request.user.last_name,
         'username': request.user.username,
-        'picture_link': user.picture,
-        'stream': "global"
-    }
+        'picture_link': user.picture
+        }
     context['form'] = PostForm()
     return render(request, 'socialmedia/index.html', context=context)
 
@@ -164,8 +172,7 @@ def get_posts(request):
     response_data = []
     for post in Post.objects.all().order_by('time'):
         geolocator = Nominatim(user_agent="geoapiExercises")
-        location = geolocator.reverse(str(post.latitude) + "," + str(post.longitude))
-        city = location.raw['address']['city']
+        
         my_post = {
             'type': 'post',
             'id': post.id,
@@ -176,7 +183,7 @@ def get_posts(request):
             'created_time': post.time.isoformat(),
             'longitude': post.longitude,
             'latitude': post.latitude,
-            'city': city
+            'city': post.city
         }
         response_data.append(my_post)
 
@@ -215,11 +222,16 @@ def addPost(request):
 
         context['form'] = PostForm()
         return render(request, 'socialmedia/addTemplate.html', context)
+
+    geolocator = Nominatim(user_agent="geoapiExercises")
+    location = geolocator.reverse(request.POST['lat']+","+request.POST['long'])
+    city = location.raw['address']['city']
     post = Post()
     post.user = request.user
     post.time = timezone.now()
     post.latitude = 88
     post.longitude = 88
+    post.city = city
     post_form = PostForm(request.POST, instance=post)
     post_form.save()
     return redirect(reverse('global_stream'))

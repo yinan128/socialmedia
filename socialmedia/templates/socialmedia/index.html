@@ -58,8 +58,12 @@
                     <a class="menu-item active" onclick="switchToGlobalChannel()" id="globalChannel">
                         <span><i class="uil uil-compass"></i></span><h3>Global Channel</h3>
                     </a>
+                    <a class="menu-item" onclick="switchToLocalStream()" id="localStream">
+                        <span><i class="uil uil-compass"></i></span><h3>Local Channel</h3>
+                    </a>
+                    
                     <a class="menu-item" onclick="switchToLocalChannel()" id="localChannel">
-                        <span><i class="uil uil-home"></i></span><h3>Local Channel</h3>
+                        <span><i class="uil uil-home"></i></span><h3>Local News</h3>
                     </a>
                     <a class="menu-item">
                         <span><i class="uil uil-compass"></i></span><h3>Map it</h3>
@@ -415,15 +419,15 @@
 <script>
     //Call getList() as soon as page is finished loading to display the to do list
     type = document.getElementById("stream").value;
-    if (type == 'global'){
+    //if (type == 'global'){
         window.onload = getPosts;
         //... also call getList every 3 seconds hereafter to update the list
         window.setInterval(getPosts, 3000);
-    }else{
-        window.onload = getLocationforLocal()
-        console.log("onload!")
-        window.setInterval(loadPosts, 50000)
-    }
+    //}else{
+    //    window.onload = getLocationforLocal()
+    //    console.log("onload!")
+    //    window.setInterval(loadPosts, 50000)
+    //}
     
     
 </script>

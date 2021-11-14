@@ -26,7 +26,6 @@ class Post(models.Model):
     city = models.CharField(max_length=50, default="Pittsburgh")
     body = RichTextField(blank=True, null=True)
 
-
 class Group(models.Model):
     name: models.CharField(max_length=40)
     users: models.ManyToManyField(User)

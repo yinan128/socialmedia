@@ -21,12 +21,13 @@ from socialmedia import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', views.local_stream),
+    path('', views.global_stream),
     path('oauth/', include('social_django.urls', namespace='social')),
     path('logout', auth_views.logout_then_login, name='logout'),
     path('local_stream', views.local_stream, name='local'),
     path('socialnetwork/get-local/<longitude>/<latitude>/', views.get_local),
     url(r'profile-photo/(?P<id>\d+)$', views.photo, name='photo'),
+    url(r'photo/(?P<id>\d+)$', views.post_photo),
     path('socialmedia/', include('socialmedia.urls'))
 ]
   

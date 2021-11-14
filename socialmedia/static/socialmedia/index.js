@@ -223,6 +223,14 @@ Bg3.addEventListener('click', () => {
 function switchToLocalChannel() {
     // delete all middle part.
     document.getElementById("middlePart").innerHTML = '<div class="feeds" id="allNews"></div>'
+    document.getElementById("globalChannel").innerHTML = '<a class="menu-item" onclick="switchToGlobalChannel()" id="globalChannel">' + 
+    '<span><i class="uil uil-compass"></i></span><h3>Global Channel</h3></a>'
+    document.getElementById('globalChannel').className="menu-item"
+    document.getElementById("localStream").innerHTML = '<a class="menu-item" onclick="switchToLocalStream()" id="localStream">' + 
+    '<span><i class="uil uil-compass"></i></span><h3>Local Channel</h3></a>'
+    document.getElementById("localChannel").innerHTML = '<a class="menu-item active" onclick="switchToLocalChannel()" id="localChannel">' + 
+    '<span><i class="uil uil-compass"></i></span><h3>local News</h3></a>'
+
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(acquireLocalNewsViaGeoLocation)
     } else {
@@ -249,9 +257,18 @@ function acquireLocalNewsViaGeoLocation(position) {
 
 function switchToGlobalChannel() {
     // delete all middle part.
-    if (document.getElementById("create-post") != null) return
+    if (document.getElementById("allFeeds") != null) return
     document.getElementById("middlePart").innerHTML = '<div class="middle" id="middlePart"><div class="create-post" id="create-post"><div id="editor"><script>let editor</script></div><input type="submit" value="Post" class="btn btn-primary btn-floatright" onclick="postAction()"></div>' +
         '<div class="feeds" id="allFeeds"></div>'
+    
+    document.getElementsByClassName("feeds")[0].id = "allFeeds"
+        document.getElementById("globalChannel").innerHTML = '<a class="menu-item active" onclick="switchToGlobalChannel()" id="globalChannel">' + 
+        '<span><i class="uil uil-compass"></i></span><h3>Global Channel</h3></a>'
+        document.getElementById("localStream").innerHTML = '<a class="menu-item" onclick="switchToLocalStream()" id="localStream">' + 
+        '<span><i class="uil uil-compass"></i></span><h3>Local Channel</h3></a>'
+        document.getElementById("localChannel").innerHTML = '<a class="menu-item" onclick="switchToLocalChannel()" id="localChannel">' + 
+        '<span><i class="uil uil-compass"></i></span><h3>local News</h3></a>'
+    
 
 
     ClassicEditor
@@ -270,6 +287,38 @@ function switchToGlobalChannel() {
         success: updatePosts,
         error: updateError
     })
+
+}
+
+function switchToLocalStream() {
+    // delete all middle part.
+    if (document.getElementById("localFeeds") != null) return
+    document.getElementById("middlePart").innerHTML = '<div class="middle" id="middlePart"><div class="create-post" id="create-post"><div id="editor"><script>let editor</script></div><input type="submit" value="Post" class="btn btn-primary btn-floatright" onclick="postAction()"></div>' +
+        '<div class="feeds" id="localFeeds"></div>'
+    console.log("trying to switch to local stream!")
+    document.getElementsByClassName("feeds")[0].id = "localFeeds"
+    document.getElementById("globalChannel").innerHTML = '<a class="menu-item" onclick="switchToGlobalChannel()" id="globalChannel">' + 
+    '<span><i class="uil uil-compass"></i></span><h3>Global Channel</h3></a>'
+    document.getElementById('globalChannel').className="menu-item"
+    document.getElementById("localStream").innerHTML = '<a class="menu-item active" onclick="switchToLocalStream()" id="localStream">' + 
+    '<span><i class="uil uil-compass"></i></span><h3>Local Channel</h3></a>'
+    document.getElementById("localChannel").innerHTML = '<a class="menu-item" onclick="switchToLocalChannel()" id="localChannel">' + 
+    '<span><i class="uil uil-compass"></i></span><h3>local News</h3></a>'
+
+
+    ClassicEditor
+        .create( document.querySelector( '#editor' ))
+        .then( newEditor => {
+            editor = newEditor;
+        } )
+        .catch( error => {
+            console.error( error );
+        } );
+
+
+    getLocationforLocal()
+    window.onload = getLocationforLocal;
+    window.setInterval(loadPosts, 5000);
 
 }
 
@@ -313,6 +362,20 @@ function postAfterGeoAquired(position) {
     })
 }
 
+function updateLocalPosts(response) {
+    // todo: clean deleted posts.
+    // new post found.
+    $(response).each(function() {
+        if (this.type == "comment") {
+            return
+        }
+        let post_id = "id_post_div_"+this.id
+        if (document.getElementById(post_id) == null) {
+            $("#localFeeds").prepend(postFormatter(this))
+        }
+    })
+}
+
 function updatePosts(response) {
     // todo: clean deleted posts.
     // new post found.
@@ -347,6 +410,7 @@ function postFormatter(response) {
         + '<small>' + response.city + ', 15 MINUTES AGO</small>'
         + '</div></div><span class="edit"><i class="uil uil-ellipsis-h"></i></span></div>'
         + '<div class="text" id="id_post_div_' + response.id + '">' + response.text + '</div>'
+        + '<img alt="no image uploaded" src="socialnetwork/photo/' + response.id + '" id="id_picture_' + response.id + '"></img>'
         + '<div class="action-buttons"><div class="interaction-buttons"><span><i class="uil uil-heart"></i></span><span><i class="uil uil-comment-dots"></i></span><span><i class="uil uil-share-alt"></i></span></div><div class="bookmark"><span><i class="uil uil-bookmark-full"></i></span></div></div>'
         + '<div class="liked-by"><span><img src="./images/profile-10.jpg"></span><span><img src="./images/profile-4.jpg"></span><span><img src="./images/profile-15.jpg"></span><p>Liked by <b>UserC</b> and <b>4 others</b></p></div>'
         + '<div class="comments text-muted">View all 277 comments</div></div>'
@@ -354,9 +418,12 @@ function postFormatter(response) {
 }
 
 // ======================== Local Stream =========================
+var lat;
+var lon;
 function getLocationforLocal() {
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(loadPosts)
+        
     } else {
         console.log("Geolocation is not supported by this browser.");
     }
@@ -369,8 +436,10 @@ function loadPosts(position) {
             if (request.readyState != 4) return
             updatePage(request)
     }
-    let lat = parseInt(10000 * position.coords.latitude).toString()
-    let lon = parseInt(10000 * position.coords.longitude).toString()
+    if (position != undefined) {
+        lat = parseInt(10000 * position.coords.latitude).toString();
+        lon = parseInt(10000 * position.coords.longitude).toString();
+    }
     console.log("/socialnetwork/get-local/"+lon+"/"+lat+"/")
     request.open("GET", "/socialnetwork/get-local/"+lon+"/"+lat+"/", true)
     request.send()
@@ -379,7 +448,7 @@ function loadPosts(position) {
 function updatePage(xhr) {
     if (xhr.status == 200) {
         let response = JSON.parse(xhr.responseText)
-        updatePosts(response)
+        updateLocalPosts(response)
         return
     }
     if (xhr.status == 0) {
