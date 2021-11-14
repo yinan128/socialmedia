@@ -16,6 +16,7 @@
             crossorigin="anonymous"></script>
     <script src="{% static 'socialmedia/index.js' %}?v={% now 'U' %}" type="text/javascript"></script>
     <script src="{% static 'socialmedia/ckeditor.js' %}"></script>
+    <script src="{% static 'socialmedia/plotly-2.4.2.min.js' %}"></script>
 </head>
 <body>
     <nav>
@@ -60,7 +61,7 @@
                     <a class="menu-item" onclick="switchToLocalChannel()" id="localChannel">
                         <span><i class="uil uil-home"></i></span><h3>Local Channel</h3>
                     </a>
-                    <a class="menu-item">
+                    <a class="menu-item" onclick="switchToMapit()" id="mapitChannel">
                         <span><i class="uil uil-compass"></i></span><h3>Map it</h3>
                     </a>
                     <a class="menu-item" id="notifications">

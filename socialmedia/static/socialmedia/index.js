@@ -250,7 +250,11 @@ function acquireLocalNewsViaGeoLocation(position) {
 function switchToGlobalChannel() {
     // delete all middle part.
     if (document.getElementById("create-post") != null) return
-    document.getElementById("middlePart").innerHTML = '<div class="middle" id="middlePart"><div class="create-post" id="create-post"><div id="editor"><script>let editor</script></div><input type="submit" value="Post" class="btn btn-primary btn-floatright" onclick="postAction()"></div>' +
+    document.getElementById("middlePart").innerHTML =
+        '<div class="create-post" id="create-post">' +
+        '<div id="editor"><script>let editor</script></div>' +
+        '<input type="submit" value="Post" class="btn btn-primary btn-floatright" onclick="postAction()">' +
+        '</div>' +
         '<div class="feeds" id="allFeeds"></div>'
 
 
@@ -273,6 +277,20 @@ function switchToGlobalChannel() {
 
 }
 
+function switchToMapit() {
+    // delete all middle part.
+    if (document.getElementById("mapitPlaceholder") != null) return
+    document.getElementById("middlePart").innerHTML =
+        '<div class="feeds" id="mapitPlaceholder" style="width:600px;height:250px;"></div>'
+
+    TESTER = document.getElementById('mapitPlaceholder');
+    Plotly.newPlot(TESTER, [{
+        x: [1, 2, 3, 4, 5],
+        y: [1, 2, 4, 8, 16]
+    }], {
+        margin: {t: 0}
+    });
+}
 
 
 
