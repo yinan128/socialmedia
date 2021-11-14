@@ -15,6 +15,7 @@
             integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0="
             crossorigin="anonymous"></script>
     <script src="{% static 'socialmedia/index.js' %}?v={% now 'U' %}" type="text/javascript"></script>
+    <script src="{% static 'socialmedia/ckeditor.js' %}"></script>
 </head>
 <body>
     <nav>
@@ -36,6 +37,7 @@
 
     <!------------------------- MAIN -------------------------->
     <main>
+        <input type="hidden" id="stream" value="{{stream}}">
         <div class="container">
             <!--======================== LEFT ==========================-->
             <div class="left">
@@ -53,10 +55,10 @@
 
                 <!-------------------- SIDEBAR ------------------------->
                 <div class="sidebar">
-                    <a class="menu-item active">
+                    <a class="menu-item active" onclick="switchToGlobalChannel()" id="globalChannel">
                         <span><i class="uil uil-compass"></i></span><h3>Global Channel</h3>
                     </a>
-                    <a class="menu-item">
+                    <a class="menu-item" onclick="switchToLocalChannel()" id="localChannel">
                         <span><i class="uil uil-home"></i></span><h3>Local Channel</h3>
                     </a>
                     <a class="menu-item">
@@ -141,17 +143,34 @@
 
 
             <!--======================== MIDDLE ==========================-->
-            <div class="middle">
-                <div class="create-post">
-                    <div class="profile-photo">
-                        <img src="./images/profile-1.jpg">
+            <div class="middle" id="middlePart">
+                <div class="create-post" id="create-post">
+
+                    <div id="editor">
                     </div>
-                    <input type="text" placeholder="What's on your mind?" id="create-post">
-                    <input type="submit" value="Post" class="btn btn-primary" onclick="getLocation()">
+                    <script>
+                        let editor
+                        ClassicEditor
+                            .create( document.querySelector( '#editor' ))
+                            .then( newEditor => {
+                                editor = newEditor;
+                            } )
+                            .catch( error => {
+                                console.error( error );
+                            } );
+                    </script>
+
+                    <input type="submit" value="Post" class="btn btn-primary btn-floatright" onclick="postAction()">
+
+{#                    <div class="profile-photo">#}
+{#                        <img src="./images/profile-1.jpg">#}
+{#                    </div>#}
+{#                    <input type="text" placeholder="What's on your mind?" id="create-post">#}
+{#                    <input type="submit" value="Post" class="btn btn-primary" onclick="getLocation()">#}
                 </div>
 
                 <!------------------- FEEDS --------------------->
-                <div class="feeds">
+                <div class="feeds" id="allFeeds">
                     <!------------------- FEED 1 --------------------->
                     <div class="feed">
                         <div class="head">
@@ -189,7 +208,6 @@
 
                         <div class="comments text-muted">View all 277 comments</div>
                     </div>
-                    <!---------------- END OF FEED ----------------->
                     <!---------------- END OF FEED ----------------->
                 </div>
                 <!------------------------------- END OF FEEDS ------------------------------------>
@@ -393,97 +411,22 @@
     </div>
 </div>
 
+<!-- <script src="socialmedia/index.js"></script> -->
 <script>
-    function getLocation() {
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(loadPosts)
-    } else {
-        console.log("Geolocation is not supported by this browser.");
+    //Call getList() as soon as page is finished loading to display the to do list
+    type = document.getElementById("stream").value;
+    if (type == 'global'){
+        window.onload = getPosts;
+        //... also call getList every 3 seconds hereafter to update the list
+        window.setInterval(getPosts, 3000);
+    }else{
+        window.onload = getLocationforLocal()
+        console.log("onload!")
+        window.setInterval(loadPosts, 50000)
     }
-}
-
-function loadPosts(position) {
-    console.log("start load!")
-    let request = new XMLHttpRequest()
-    request.onreadystatechange = function() {
-            if (request.readyState != 4) return
-            updatePage(request)
-    }
-    let lat = parseInt(10000 * position.coords.latitude).toString()
-    let lon = parseInt(10000 * position.coords.longitude).toString()
-    console.log("/socialnetwork/get-local/"+lon+"/"+lat+"/")
-    request.open("GET", "/socialnetwork/get-local/"+lon+"/"+lat+"/", true)
-    request.send()
-}
-
-function updatePage(xhr) {
-    if (xhr.status == 200) {
-        let response = JSON.parse(xhr.responseText)
-        updateList(response)
-        return
-    }
-    if (xhr.status == 0) {
-        displayError('Cannot connect to server')
-        return
-    }
-
-    if (!xhr.getResponseHeader('content-type') == 'application/json') {
-        displayError("Received status=" + xhr.status)
-        return
-    }
-
-    let response = JSON.parse(xhr.responseText)
-    if (response.hasOwnProperty('error')) {
-        displayError(response.error)
-        return
-    }
-
-    displayError(response)
-}
-
-function displayError(message) {
-    let errorElement = document.getElementById("error")
-    errorElement.innerHTML = message
-}
-
-function updateList(items) {
-    let list = document.getElementsByClassName("feeds")[0]
-    while (list.hasChildNodes()){
-        list.removeChild(list.firstChild)
-    }
-
-    for (let i=0; i<items.length; i++){
-        let item = items[i]['post']
-        let element = document.createElement("li")
-        console.log(item)
-        console.log(items[i])
-        ingo = "<div class=\"ingo\"> <h3>" + item.user_id + " <small>" + item.city + " " + item.time + "</small> </div>"
-        image = ""
-        user = "<div class=\"user\">" + ingo + image + "</div> <span class=\"edit\"> <i class=\"uil uil-ellipsis-h\"></i></span>"
-        head = "<div class=\"head\">" + user + "</div>"
-
-        text = "<div class=\"text\">" + item.text + "</div>"
-        action_buttons = "<div class=\"action-buttons\"> \
-                            <div class=\"interaction-buttons\"> \
-                                <span><i class=\"uil uil-heart\"></i></span> \
-                                <span><i class=\"uil uil-comment-dots\"></i></span> \
-                                <span><i class=\"uil uil-share-alt\"></i></span> \
-                            </div> \
-                            <div class=\"bookmark\"> \
-                                <span><i class=\"uil uil-bookmark-full\"></i></span> \
-                            </div> \
-                        </div> "
-        
-        comment = "<div class=\"comments text-muted\">View all 277 comments</div>"
-        feed = "<div class=\"feeds\">" + head + text + action_buttons + comment + "</div>"
-        element.innerHTML = feed
-        list.appendChild(element)
-    }
-}
-
-console.log("onload!")
-window.onload = getLocation()
-window.setInterval(loadPosts, 50000)
+    
+    
 </script>
+
 </body>
 </html>

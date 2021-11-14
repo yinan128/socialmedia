@@ -10,3 +10,12 @@ Besides,
 `pip install python-social-auth`
 (these 3 maybe needed)
 
+To support rich text editor
+`pip install django-ckeditor`
+
+To support news feed
+`pip install newsapi-python`
+
+To support geolocation
+`pip install geopy`
+

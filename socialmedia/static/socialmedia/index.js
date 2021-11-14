@@ -169,11 +169,6 @@ colorPalette.forEach(color => {
     })
 })
 
-
-
-
-
-
 // theme BACKGROUND values
 let lightColorLightness;
 let whiteColorLightness;
@@ -224,118 +219,151 @@ Bg3.addEventListener('click', () => {
     changeBG();
 })
 
+// ======================== SWITCH CHANNELS =========================
+function switchToLocalChannel() {
+    // delete all middle part.
+    document.getElementById("middlePart").innerHTML = '<div class="feeds" id="allNews"></div>'
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(acquireLocalNewsViaGeoLocation)
+    } else {
+        console.log("Geolocation is not supported by this browser.");
+    }
+}
+
+function acquireLocalNewsViaGeoLocation(position) {
+    $.ajax({
+        url: "/socialmedia/get-local-news",
+        type: "POST",
+        data: {
+            lat: position.coords.latitude,
+            long: position.coords.longitude,
+            csrfmiddlewaretoken: getCSRFToken()
+        },
+        success: updateNews,
+        error: updateError
+    })
+}
+
+
+
+
+function switchToGlobalChannel() {
+    // delete all middle part.
+    if (document.getElementById("create-post") != null) return
+    document.getElementById("middlePart").innerHTML = '<div class="middle" id="middlePart"><div class="create-post" id="create-post"><div id="editor"><script>let editor</script></div><input type="submit" value="Post" class="btn btn-primary btn-floatright" onclick="postAction()"></div>' +
+        '<div class="feeds" id="allFeeds"></div>'
+
+
+    ClassicEditor
+        .create( document.querySelector( '#editor' ))
+        .then( newEditor => {
+            editor = newEditor;
+        } )
+        .catch( error => {
+            console.error( error );
+        } );
+
+
+    $.ajax({
+        url: "/socialmedia/get-posts",
+        type: "GET",
+        success: updatePosts,
+        error: updateError
+    })
+
+}
+
+
+
 
 
 // ======================== POST =========================
 
-function getLocation() {
+function postAction() {
+    getLocationThenPost()
+}
+
+function getLocationThenPost() {
     if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(makePost)
+        navigator.geolocation.getCurrentPosition(postAfterGeoAquired)
+    } else {
+        console.log("Geolocation is not supported by this browser.");
+    }
+}
+
+
+function postAfterGeoAquired(position) {
+    // let post_bar = document.getElementById("create-post")
+    // let post_text = post_bar.value
+    // post_bar.value = ""
+    post_body = editor.getData()
+    editor.setData('')
+
+    $.ajax({
+        url: "/socialmedia/post",
+        type: "POST",
+        data: {
+            text: post_body,
+            lat: position.coords.latitude,
+            long: position.coords.longitude,
+            csrfmiddlewaretoken: getCSRFToken()
+        },
+        success: updatePosts,
+        error: updateError
+    })
+}
+
+function updatePosts(response) {
+    // todo: clean deleted posts.
+    // new post found.
+    $(response).each(function() {
+        if (this.type == "comment") {
+            return
+        }
+        let post_id = "id_post_div_"+this.id
+        if (document.getElementById(post_id) == null) {
+            $("#allFeeds").prepend(postFormatter(this))
+        }
+    })
+}
+
+function updateNews(response) {
+    $(response).each(function() {
+        $("#allNews").append(newsFormatter(this))
+    })
+}
+
+function newsFormatter(news) {
+    result = '<div class="feed"><div class="text">' + news.title +'</div></div>'
+    return result
+}
+
+
+// ======================== Text Formatter =========================
+function postFormatter(response) {
+    result = '<div class="feed"><div class="head"><div class="user"><div class="profile-photo">'
+        + '<img src="./images/profile-' + response.user + '.jpg"></div><div class="ingo">'
+        + '<h3>' + response.firstname + ' ' + response.lastname + '</h3>'
+        + '<small>' + response.city + ', 15 MINUTES AGO</small>'
+        + '</div></div><span class="edit"><i class="uil uil-ellipsis-h"></i></span></div>'
+        + '<div class="text" id="id_post_div_' + response.id + '">' + response.text + '</div>'
+        + '<div class="action-buttons"><div class="interaction-buttons"><span><i class="uil uil-heart"></i></span><span><i class="uil uil-comment-dots"></i></span><span><i class="uil uil-share-alt"></i></span></div><div class="bookmark"><span><i class="uil uil-bookmark-full"></i></span></div></div>'
+        + '<div class="liked-by"><span><img src="./images/profile-10.jpg"></span><span><img src="./images/profile-4.jpg"></span><span><img src="./images/profile-15.jpg"></span><p>Liked by <b>UserC</b> and <b>4 others</b></p></div>'
+        + '<div class="comments text-muted">View all 277 comments</div></div>'
+    return result
+}
+
+// ======================== Local Stream =========================
+function getLocationforLocal() {
+    if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(loadPosts)
     } else {
         console.log("Geolocation is not supported by this browser.");
     }
 }
 
-// // todo: this method is to get accurate location, but not working for some PC.
-// function getLocation() {
-//     if (navigator.geolocation) {
-//         getAccurateLocation(makePost, function(err){console.log("err happens")}, function (loc){console.log("in progress")}, {desiredAccuracy:20, maxWait:15000})
-//     } else {
-//         console.log("Geolocation is not supported by this browser.");
-//     }
-// }
-
-
-function makePost(position) {
-    let post_bar = document.getElementById("create-post")
-    let post_text = post_bar.value
-    post_bar.value = ""
-
-    $.ajax({
-        url: "/socialmedia/post",
-        type: "POST",
-        data: {
-            text: post_text,
-            lat: position.coords.latitude,
-            long: position.coords.longitude,
-            csrfmiddlewaretoken: getCSRFToken()
-        },
-    })
-}
-
-
-// ======================== HELPERS =========================
-function getCSRFToken() {
-    let cookies = document.cookie.split(";")
-    for (let i = 0; i < cookies.length; i++) {
-        let c = cookies[i].trim()
-        if (c.startsWith("csrftoken=")) {
-            return c.substring("csrftoken=".length, c.length)
-        }
-    }
-    return "unknown";
-}
-
-
-function getAccurateLocation(geolocationSuccess, geolocationError, geoprogress, options) {
-    var lastCheckedPosition,
-        locationEventCount = 0,
-        watchID,
-        timerID;
-
-    options = options || {};
-
-    var checkLocation = function (position) {
-        lastCheckedPosition = position;
-        locationEventCount = locationEventCount + 1;
-        console.log(locationEventCount)
-        console.log(lastCheckedPosition)
-        // We ignore the first event unless it's the only one received because some devices seem to send a cached
-        // location even when maxaimumAge is set to zero
-        if ((position.coords.accuracy <= options.desiredAccuracy) && (locationEventCount > 1)) {
-            clearTimeout(timerID);
-            navigator.geolocation.clearWatch(watchID);
-            foundPosition(position);
-        } else {
-            geoprogress(position);
-        }
-    };
-
-    var stopTrying = function () {
-        navigator.geolocation.clearWatch(watchID);
-        foundPosition(lastCheckedPosition);
-    };
-
-    var onError = function (error) {
-        clearTimeout(timerID);
-        navigator.geolocation.clearWatch(watchID);
-        geolocationError(error);
-    };
-
-    var foundPosition = function (position) {
-        console.log("found.")
-        geolocationSuccess(position);
-    };
-
-    if (!options.maxWait)            options.maxWait = 10000; // Default 10 seconds
-    if (!options.desiredAccuracy)    options.desiredAccuracy = 20; // Default 20 meters
-    if (!options.timeout)            options.timeout = options.maxWait; // Default to maxWait
-
-    options.maximumAge = 0; // Force current locations only
-    options.enableHighAccuracy = true; // Force high accuracy (otherwise, why are you using this function?)
-
-    watchID = navigator.geolocation.watchPosition(checkLocation, onError, options);
-    timerID = setTimeout(stopTrying, options.maxWait); // Set a timeout that will abandon the location loop
-};
-
-// END
-
-// ======================== LOCAL STREAM =========================
-console.log("onload!")
-window.onload = function() {getLocation(); loadPosts();}
-window.setInterval(loadPosts, 50000)
 function loadPosts(position) {
+    console.log("start load!")
     let request = new XMLHttpRequest()
     request.onreadystatechange = function() {
             if (request.readyState != 4) return
@@ -351,7 +379,7 @@ function loadPosts(position) {
 function updatePage(xhr) {
     if (xhr.status == 200) {
         let response = JSON.parse(xhr.responseText)
-        updateList(response)
+        updatePosts(response)
         return
     }
     if (xhr.status == 0) {
@@ -373,43 +401,51 @@ function updatePage(xhr) {
     displayError(response)
 }
 
+// ======================== HELPERS =========================
+function getCSRFToken() {
+    let cookies = document.cookie.split(";")
+    for (let i = 0; i < cookies.length; i++) {
+        let c = cookies[i].trim()
+        if (c.startsWith("csrftoken=")) {
+            return c.substring("csrftoken=".length, c.length)
+        }
+    }
+    return "unknown";
+}
+
+// error handling
+function updateError(xhr) {
+    if (xhr.status == 0) {
+        displayError("Cannot connect to server")
+        return
+    }
+
+    if (!xhr.getResponseHeader('content-type') == 'application/json') {
+        displayError("Received status=" + xhr.status)
+        return
+    }
+
+    let response = JSON.parse(xhr.responseText)
+    if (response.hasOwnProperty('error')) {
+        displayError(response.error)
+        return
+    }
+
+    displayError(response)
+}
+
 function displayError(message) {
-    let errorElement = document.getElementById("error")
-    errorElement.innerHTML = message
+    $("#error").html(message);
 }
 
-function updateList(items) {
-    let list = document.getElementsByClassName("feeds")[0]
-    while (list.hasChildNodes()){
-        list.removeChild(list.firstChild)
-    }
-
-    for (let i=0; i<items.length; i++){
-        let item = items[i]['post']
-        console.log(items[i])
-        console.log(item)
-        let element = document.createElement("li")
-
-        ingo = "<div class=\"ingo\"> <h3>" + item.user_id + " <small>" + item.city + item.time + "</small> </div>"
-        image = "<div class=\"profile-photo\"> <img src=\"{% url 'photo' " + item.post_id + " %}\" alt=\"\"> </div>"
-        user = "<div class=\"user\">" + ingo + image + "</div> <span class=\"edit\"> <i class=\"uil uil-ellipsis-h\"></i></span>"
-        head = "<div class=\"head\">" + user + "</div>"
-
-        text = "<div class=\"text\">" + item.text + "</div>"
-        action_buttons = "<div class=\"action-buttons\"> \
-                            <div class=\"interaction-buttons\"> \
-                                <span><i class=\"uil uil-heart\"></i></span> \
-                                <span><i class=\"uil uil-comment-dots\"></i></span> \
-                                <span><i class=\"uil uil-share-alt\"></i></span> \
-                            </div> \
-                            <div class=\"bookmark\"> \
-                                <span><i class=\"uil uil-bookmark-full\"></i></span> \
-                            </div> \
-                        </div> "
-        
-        comment = "<div class=\"comments text-muted\">View all 277 comments</div>"
-        feed = "<div class=\"feeds\">" + head + text + action_buttons + comment + "</div>"
-        element.innerHTML = feed
-        list.appendChild(element)
-    }
+// get posts
+function getPosts() {
+    $.ajax({
+        url: "/socialmedia/get-posts",
+        datatype: "json",
+        success: updatePosts,
+        error: updateError
+    })
 }
+
+// END

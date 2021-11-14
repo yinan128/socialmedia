@@ -6,5 +6,9 @@ urlpatterns = [
     path('login', views.login_action, name='login'),
     path('post', views.post_action, name='post'),
     path('local_stream/<int:longitude>/<int:latitude>/', views.local_stream, name='local'),
-    path('socialnetwork/get-local', views.get_local)
+    path('socialnetwork/get-local', views.get_local),
+    path('get-posts', views.get_posts),
+    path('get-local-news', views.get_news),
+    path('addPost', views.addPost, name='newPost')
+
 ]
