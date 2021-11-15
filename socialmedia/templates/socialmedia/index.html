@@ -17,6 +17,7 @@
     <script src="{% static 'socialmedia/index.js' %}?v={% now 'U' %}" type="text/javascript"></script>
     <script src="{% static 'socialmedia/ckeditor.js' %}"></script>
     <script src="{% static 'socialmedia/plotly-2.4.2.min.js' %}"></script>
+    <script src="{% static 'socialmedia/luxon.min.js' %}"></script>
 </head>
 <body>
     <nav>
@@ -457,9 +458,9 @@
 <!-- <script src="socialmedia/index.js"></script> -->
 <script>
     //Call getList() as soon as page is finished loading to display the to do list
-    window.onload = getPosts;
+    window.onload = onloadEvents;
     //... also call getList every 3 seconds hereafter to update the list
-    window.setInterval(getPosts, 3000);
+    {#window.setInterval(getPosts, 3000);#}
 </script>
 
 </body>

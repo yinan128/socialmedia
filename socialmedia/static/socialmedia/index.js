@@ -17,6 +17,8 @@ const Bg1 = document.querySelector('.bg-1');
 const Bg2 = document.querySelector('.bg-2');
 const Bg3 = document.querySelector('.bg-3');
 
+// current location of the user.
+var currLocation;
 
 
 // ================ SIDEBAR ===============
@@ -219,32 +221,42 @@ Bg3.addEventListener('click', () => {
     changeBG();
 })
 
-// ======================== SWITCH CHANNELS =========================
-function switchToLocalChannel() {
-    // delete all middle part.
-    document.getElementById("middlePart").innerHTML = '<div class="feeds" id="allNews"></div>'
+
+// ======================== onload events =========================
+function onloadEvents() {
+    getPosts();
+    acquireCurrLocation();
+}
+
+
+// ======================== acquire current location =========================
+function acquireCurrLocation() {
     if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(acquireLocalNewsViaGeoLocation)
+        navigator.geolocation.getCurrentPosition(function(location){
+            currLocation = location;
+        })
     } else {
         console.log("Geolocation is not supported by this browser.");
     }
 }
 
-function acquireLocalNewsViaGeoLocation(position) {
+
+// ======================== SWITCH CHANNELS =========================
+function switchToLocalChannel() {
+    // delete all middle part.
+    document.getElementById("middlePart").innerHTML = '<div class="feeds" id="allNews"></div>'
     $.ajax({
         url: "/socialmedia/get-local-news",
         type: "POST",
         data: {
-            lat: position.coords.latitude,
-            long: position.coords.longitude,
+            lat: currLocation.coords.latitude,
+            long: currLocation.coords.longitude,
             csrfmiddlewaretoken: getCSRFToken()
         },
         success: updateNews,
         error: updateError
     })
 }
-
-
 
 
 function switchToGlobalChannel() {
@@ -281,39 +293,70 @@ function switchToMapit() {
     // delete all middle part.
     if (document.getElementById("mapitPlaceholder") != null) return
     document.getElementById("middlePart").innerHTML =
-        '<div class="feeds" id="mapitPlaceholder" style="width:600px;height:250px;"></div>'
+        '<div class="feeds" id="mapitPlaceholder" style="width:600px;height:450px;"></div>'
 
-    TESTER = document.getElementById('mapitPlaceholder');
-    Plotly.newPlot(TESTER, [{
-        x: [1, 2, 3, 4, 5],
-        y: [1, 2, 4, 8, 16]
-    }], {
-        margin: {t: 0}
-    });
+    $.ajax({
+        url: "/socialmedia/get-postsNearby",
+        type: "POST",
+        data: {
+            lat: currLocation.coords.latitude,
+            long: currLocation.coords.longitude,
+            csrfmiddlewaretoken: getCSRFToken()
+        },
+        success: updateMap,
+        error: updateError
+    })
 }
 
+function updateMap(response) {
+    mapPlaceholder = document.getElementById('mapitPlaceholder');
+    var data = []
 
+    $(response).each(function() {
+        let start = luxon.DateTime.fromISO(this.created_time)
+        let end = luxon.DateTime.fromJSDate(new Date())
+        let diff = end.diff(start, ['days', 'hours', 'minutes']).toObject()
 
+        data.push({
+            type:'scattermapbox',
+            customdata: [[this.firstname + ' ' + this.lastname, dateDiffFormatter(diff)]],
+            hovertemplate: "<b>%{customdata[0]}</b><br><i>%{customdata[1]}</i><br>%{text}<extra></extra>",
+            lat:[this.latitude],
+            lon:[this.longitude],
+            mode:'markers',
+            marker: {
+            size:14
+            },
+            text:[this.text]
+        })
+    })
+
+    var layout = {
+      autosize: true,
+      hovermode:'closest',
+      showlegend:false,
+      mapbox: {
+          bearing:0,
+          center: {
+          lat:currLocation.coords.latitude,
+          lon:currLocation.coords.longitude
+        },
+        pitch:0,
+        zoom:13
+      },
+    }
+
+    Plotly.setPlotConfig({
+      mapboxAccessToken: "pk.eyJ1IjoieWluYW4xMjgiLCJhIjoiY2t2eTI4b2s3NzM4cTJ1czFmN2Z2NXVlbSJ9.1MRpWhMX4OdTDWNqNoGaaw"
+    })
+
+    Plotly.newPlot(mapPlaceholder, data, layout)
+
+}
 
 // ======================== POST =========================
 
 function postAction() {
-    getLocationThenPost()
-}
-
-function getLocationThenPost() {
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(postAfterGeoAquired)
-    } else {
-        console.log("Geolocation is not supported by this browser.");
-    }
-}
-
-
-function postAfterGeoAquired(position) {
-    // let post_bar = document.getElementById("create-post")
-    // let post_text = post_bar.value
-    // post_bar.value = ""
     post_body = editor.getData()
     editor.setData('')
 
@@ -322,14 +365,15 @@ function postAfterGeoAquired(position) {
         type: "POST",
         data: {
             text: post_body,
-            lat: position.coords.latitude,
-            long: position.coords.longitude,
+            lat: currLocation.coords.latitude,
+            long: currLocation.coords.longitude,
             csrfmiddlewaretoken: getCSRFToken()
         },
         success: updatePosts,
         error: updateError
     })
 }
+
 
 function updatePosts(response) {
     // todo: clean deleted posts.
@@ -351,23 +395,45 @@ function updateNews(response) {
     })
 }
 
-function newsFormatter(news) {
-    result = '<div class="feed"><div class="text">' + news.title +'</div></div>'
-    return result
-}
 
 
 // ======================== Text Formatter =========================
 function postFormatter(response) {
+    let start = luxon.DateTime.fromJSDate(new Date(response.created_time))
+    let end = luxon.DateTime.fromJSDate(new Date())
+    let diff = end.diff(start, ['days', 'hours', 'minutes']).toObject()
+
     result = '<div class="feed"><div class="head"><div class="user"><div class="profile-photo">'
         + '<img src="./images/profile-' + response.user + '.jpg"></div><div class="ingo">'
         + '<h3>' + response.firstname + ' ' + response.lastname + '</h3>'
-        + '<small>' + response.city + ', 15 MINUTES AGO</small>'
+        + '<small>' + response.city + ', ' + dateDiffFormatter(diff) + '</small>'
         + '</div></div><span class="edit"><i class="uil uil-ellipsis-h"></i></span></div>'
         + '<div class="text" id="id_post_div_' + response.id + '">' + response.text + '</div>'
         + '<div class="action-buttons"><div class="interaction-buttons"><span><i class="uil uil-heart"></i></span><span><i class="uil uil-comment-dots"></i></span><span><i class="uil uil-share-alt"></i></span></div><div class="bookmark"><span><i class="uil uil-bookmark-full"></i></span></div></div>'
         + '<div class="liked-by"><span><img src="./images/profile-10.jpg"></span><span><img src="./images/profile-4.jpg"></span><span><img src="./images/profile-15.jpg"></span><p>Liked by <b>UserC</b> and <b>4 others</b></p></div>'
         + '<div class="comments text-muted">View all 277 comments</div></div>'
+    return result
+}
+
+
+function newsFormatter(news) {
+    result = '<div class="feed"><div class="text">' + news.title +'</div></div>'
+    return result
+}
+
+function dateDiffFormatter(diff) {
+    let result = ""
+    if (diff.days != 0) {
+        result += diff.days + " days "
+    }
+    if (diff.hours != 0) {
+        result += diff.hours + " hours "
+    }
+    if (Math.round(diff.minutes) == 1) {
+        result += Math.round(diff.minutes) + " minute ago"
+    } else {
+        result += Math.round(diff.minutes) + " minutes ago"
+    }
     return result
 }
 

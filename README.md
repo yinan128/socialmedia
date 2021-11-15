@@ -19,3 +19,13 @@ To support news feed
 To support geolocation
 `pip install geopy`
 
+## finished on this stage
+visualization of posts on map
+transform the date to be date difference.
+make currLocation a global variable, so no need to acquire geolocation every time.
+
+## to be done
+need to filter out the posts that are in users area (<5km?)
+local news need to have caption, auther, datetime and picture.
+
+
