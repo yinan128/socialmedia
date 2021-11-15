@@ -19,3 +19,9 @@ To support news feed
 To support geolocation
 `pip install geopy`
 
+
+## How to setup Allauth
+
+When you makemigrations and migrate
+
+1. Create a super account

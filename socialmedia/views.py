@@ -32,12 +32,24 @@ def update_user_social_data(strategy, *args, **kwargs):
         pass
 
 
+def login(request):
+    return render(request, 'socialmedia/login.html', {})
+
+def add_profile(user):
+    try:
+        userProfile_obj = Profile.objects.get(user=user)
+    except Profile.DoesNotExist:
+        userProfile_obj = Profile()
+        userProfile_obj.user = user
+        userProfile_obj.save()
+
 # Create your views here.
 @login_required()
 def global_stream(request):
-    # print(request.user.username)
-    # print(request.user.first_name)
-    # print(request.user.last_name)
+    print(request.user.username)
+    print(request.user.first_name)
+    print(request.user.last_name)
+    add_profile(request.user)
     # print(request.user)
     user = Profile.objects.get(user=request.user)
     # print(user.picture)

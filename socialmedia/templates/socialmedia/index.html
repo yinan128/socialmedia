@@ -17,6 +17,7 @@
     <script src="{% static 'socialmedia/index.js' %}?v={% now 'U' %}" type="text/javascript"></script>
     <script src="{% static 'socialmedia/ckeditor.js' %}"></script>
 </head>
+
 <body>
     <nav>
         <div class="container">
@@ -29,10 +30,10 @@
             </div>
             <div class="create">
                 <div class="profile-photo">
-                    <img src={{picture_link}}>
+                    <img src="{{ user.socialaccount_set.all.0.get_avatar_url }}">
                 </div>
                 <div>
-                    <a href="logout/">logout</a>
+                    <a href="{% url 'account_logout' %}">logout</a>
                 </div>
             </div>
         </div>
@@ -45,7 +46,7 @@
             <div class="left">
                 <a class="profile">
                     <div class="profile-photo">
-                        <img src={{picture_link}}>
+                        <img src="{{ user.socialaccount_set.all.0.get_avatar_url }}">
                     </div>
                     <div class="handle">
                         <h4>{{first_name}} {{last_name}}</h4>
