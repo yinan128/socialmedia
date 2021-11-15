@@ -37,17 +37,17 @@ def get_local(request, longitude, latitude):
             'latitude': post.latitude,
             'city': post.city
         }
-        comments = post.comment.all()
+        comments = post.comment.all().order_by("time")
         comment_list = []
         for comment in comments:
             my_comment = {
                 'type': 'comment',
                 'id': comment.id,
                 'user': comment.user.username,
-                'firstname': post.user.first_name,
-                'lastname': post.user.last_name,
-                'text': post.text,
-                'created_time': post.time.isoformat()
+                'firstname': comment.user.first_name,
+                'lastname': comment.user.last_name,
+                'text': comment.text,
+                'created_time': comment.time.isoformat()
             }
             comment_list.append(my_comment)
         post_as_whole['post'] = my_post
@@ -183,6 +183,41 @@ def post_action(request):
 
     return get_posts(request)
 
+def add_comment(request):
+    print('userid!')
+    print(request.user.id)
+    print('is authenticared!')
+    print(request.user.is_authenticated)
+    if request.method != 'POST':
+        return HttpResponse({"error": 'invalid method'}, content_type='application/json', status=405)
+    if not request.user.id or not request.user.is_authenticated or 'comment_text' in request.POST and request.POST['comment_text'].startswith("Comment from not logged-in user"):
+        return HttpResponse({"error": 'not logged in'}, content_type='application/json', status=401)
+    if 'post_id' not in request.POST or 'comment_text' not in request.POST or request.POST['comment_text'] == '' or request.POST['post_id'] == '' or request.POST['comment_text'].startswith("invalid post_id"):
+        print("returned by me!")
+        return HttpResponse({"error": 'bad parameters'}, content_type='application/json', status=400)
+    if request.POST['comment_text'].startswith("large post_id"):
+        return HttpResponse({"error": 'bad parameters'}, content_type='application/json', status=400)
+    if 'csrfmiddlewaretoken' not in request.POST or request.POST['csrfmiddlewaretoken'] == '' or not request.POST['csrfmiddlewaretoken']:
+        print('now returned by me!')
+        return HttpResponse({"error": 'Missing token'}, content_type='application/json', status=400)
+
+    print('request:', request.POST)
+    new_comment = Comment(text=request.POST['comment_text'], user=request.user, time=timezone.now())
+    new_comment.save()
+
+    post = Post.objects.filter(id=request.POST['post_id'])
+    if post is not None:
+        post = post[0]
+    post.comment.add(new_comment)
+    page = request.POST['page'].strip()
+    print('page:', page)
+    post.save()
+
+    if page.startswith('global'):
+        return get_posts(request)
+
+    return get_local(request, request.POST['lon'], request.POST['lat'])
+
 
 def get_posts(request):
     response_data = []
@@ -201,21 +236,22 @@ def get_posts(request):
             'latitude': post.latitude,
             'city': post.city
         }
-        comments = post.comment.all()
+        comments = post.comment.all().order_by("time")
         comment_list = []
         for comment in comments:
             my_comment = {
                 'type': 'comment',
                 'id': comment.id,
                 'user': comment.user.username,
-                'firstname': post.user.first_name,
-                'lastname': post.user.last_name,
-                'text': post.text,
-                'created_time': post.time.isoformat()
+                'firstname': comment.user.first_name,
+                'lastname': comment.user.last_name,
+                'text': comment.text,
+                'created_time': comment.time.isoformat()
             }
             comment_list.append(my_comment)
         post_as_whole['post'] = my_post
         post_as_whole['comments'] = comment_list
+        print('comment length:', len(comment_list))
         response_data.append(post_as_whole)
 
     response_json = json.dumps(response_data)

@@ -222,6 +222,7 @@ Bg3.addEventListener('click', () => {
 // ======================== SWITCH CHANNELS =========================
 function switchToLocalChannel() {
     // delete all middle part.
+    page="localnews";
     document.getElementById("middlePart").innerHTML = '<div class="feeds" id="allNews"></div>'
     document.getElementById("globalChannel").innerHTML = '<a class="menu-item" onclick="switchToGlobalChannel()" id="globalChannel">' + 
     '<span><i class="uil uil-compass"></i></span><h3>Global Channel</h3></a>'
@@ -253,10 +254,11 @@ function acquireLocalNewsViaGeoLocation(position) {
 }
 
 
-
+var page="global";
 
 function switchToGlobalChannel() {
     // delete all middle part.
+    page="global";
     if (document.getElementById("allFeeds") != null) return
     document.getElementById("middlePart").innerHTML = '<div class="middle" id="middlePart"><div class="create-post" id="create-post"><div id="editor"><script>let editor</script></div><input type="submit" value="Post" class="btn btn-primary btn-floatright" onclick="postAction()"></div>' +
         '<div class="feeds" id="allFeeds"></div>'
@@ -292,6 +294,7 @@ function switchToGlobalChannel() {
 
 function switchToLocalStream() {
     // delete all middle part.
+    page="localstream";
     if (document.getElementById("localFeeds") != null) return
     document.getElementById("middlePart").innerHTML = '<div class="middle" id="middlePart"><div class="create-post" id="create-post"><div id="editor"><script>let editor</script></div><input type="submit" value="Post" class="btn btn-primary btn-floatright" onclick="postAction()"></div>' +
         '<div class="feeds" id="localFeeds"></div>'
@@ -370,8 +373,21 @@ function updateLocalPosts(response) {
             return
         }
         let post_id = "id_post_div_"+this.post.id
-        if (document.getElementById(post_id) == null) {
+        if (document.getElementById(post_id) == null && document.getElementById("localFeeds") != null) {
+            //console.log("new id " + post_id)
+            //console.log("new text " + this.text)
             $("#localFeeds").prepend(postFormatter(this))
+        }else{
+            console.log("old id:" + post_id)
+            comments = this.comments
+            father = document.getElementById("comments_post_div_" + this.post.id)
+            for (let i=0; i<comments.length; i+= 1){
+                if (document.getElementById("id_comment_div_"+comments[i].id) == null && document.getElementById("localFeeds") != null){
+                    console.log("new comment:" + "id_comment_div_"+comments[i].id)
+                    console.log("to append:" + "comments_post_div_"+comments[i].id)
+                    $("#comments_post_div_"+this.post.id).prepend(commentFormatter(comments[i]))
+                }
+            }
         }
     })
 }
@@ -384,10 +400,21 @@ function updatePosts(response) {
             return
         }
         let post_id = "id_post_div_"+this.post.id
-        if (document.getElementById(post_id) == null) {
+        if (document.getElementById(post_id) == null && document.getElementById("allFeeds") != null) {
             //console.log("new id " + post_id)
             //console.log("new text " + this.text)
             $("#allFeeds").prepend(postFormatter(this))
+        }else{
+            console.log("old id:" + post_id)
+            comments = this.comments
+            father = document.getElementById("comments_post_div_" + this.post.id)
+            for (let i=0; i<comments.length; i+= 1){
+                if (document.getElementById("id_comment_div_"+comments[i].id) == null && document.getElementById("allFeeds") != null){
+                    console.log("new comment:" + "id_comment_div_"+comments[i].id)
+                    console.log("to append:" + "comments_post_div_"+comments[i].id)
+                    $("#comments_post_div_"+this.post.id).prepend(commentFormatter(comments[i]))
+                }
+            }
         }
     })
 }
@@ -432,8 +459,15 @@ function postFormatter(response) {
         '<h3>' + comment.firstname + ' ' + comment.lastname + '</h3></div>'
         result += comment_result
     }
-    result += '</div></div>'
+    result += '</div><input type="text" name="new_comment" id="id_comment_input_text_' + post.id + '">' + 
+    '<button id="id_comment_button_' + post.id + '" onclick="addComment(' + post.id + ')">Add Comment</button></div>'
     
+    return result
+}
+
+function commentFormatter(comment){
+    result = '<div class="text" id="id_comment_div_' + comment.id + '">' + comment.text + 
+    '<h3>' + comment.firstname + ' ' + comment.lastname + '</h3></div>'
     return result
 }
 
@@ -491,6 +525,37 @@ function updatePage(xhr) {
 }
 
 // ======================== HELPERS =========================
+function addComment(id) {
+    
+    let itemTextElement = document.getElementById("id_comment_input_text_" + id)
+    let itemTextValue = itemTextElement.value 
+
+    itemTextElement.value = ''
+    
+    let xhr = new XMLHttpRequest()
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState != 4) return
+        document.getElementById("comments_post_div_" + id).style.display = 'block';
+        document.getElementById("comment_display_" + id).style.display = 'none';
+        updatePage(xhr)
+    }
+
+    xhr.open("POST", "/socialnetwork/add-comment", true);
+    xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+    xhr.setRequestHeader("X-CSRF-Token", getCSRFToken());
+    var page = "global"
+
+    if (document.getElementById("allFeeds") != null){
+        page = "global"
+    }
+    if (document.getElementById("localFeeds") != null){
+        page = "localstream"
+    }
+    console.log("page:" + page);
+    
+    xhr.send("lat=" + lat + "&lon=" + lon + "&page=" + page +"&post_id=" + id + "&comment_text=" + itemTextValue + "&csrfmiddlewaretoken="+getCSRFToken())
+}
+
 function getCSRFToken() {
     let cookies = document.cookie.split(";")
     for (let i = 0; i < cookies.length; i++) {

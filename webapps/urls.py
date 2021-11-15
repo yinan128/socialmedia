@@ -28,6 +28,7 @@ urlpatterns = [
     path('socialnetwork/get-local/<longitude>/<latitude>/', views.get_local),
     url(r'profile-photo/(?P<id>\d+)$', views.photo, name='photo'),
     url(r'photo/(?P<id>\d+)$', views.post_photo),
-    path('socialmedia/', include('socialmedia.urls'))
+    path('socialmedia/', include('socialmedia.urls')),
+    path('socialnetwork/add-comment', views.add_comment, name='ajax-add-comment')
 ]
   
