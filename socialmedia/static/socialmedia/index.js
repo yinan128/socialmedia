@@ -369,7 +369,7 @@ function updateLocalPosts(response) {
         if (this.type == "comment") {
             return
         }
-        let post_id = "id_post_div_"+this.id
+        let post_id = "id_post_div_"+this.post.id
         if (document.getElementById(post_id) == null) {
             $("#localFeeds").prepend(postFormatter(this))
         }
@@ -380,11 +380,13 @@ function updatePosts(response) {
     // todo: clean deleted posts.
     // new post found.
     $(response).each(function() {
-        if (this.type == "comment") {
+        if (this.type == "comment" || this == undefined) {
             return
         }
-        let post_id = "id_post_div_"+this.id
+        let post_id = "id_post_div_"+this.post.id
         if (document.getElementById(post_id) == null) {
+            //console.log("new id " + post_id)
+            //console.log("new text " + this.text)
             $("#allFeeds").prepend(postFormatter(this))
         }
     })
@@ -403,17 +405,35 @@ function newsFormatter(news) {
 
 
 // ======================== Text Formatter =========================
+function displayComments(post_id) {
+    document.getElementById("comments_post_div_" + post_id).style.display = 'block';
+    document.getElementById("comment_display_" + post_id).style.display = 'none';
+}
+
 function postFormatter(response) {
+    post = response.post
+    comments = response.comments
     result = '<div class="feed"><div class="head"><div class="user"><div class="profile-photo">'
-        + '<img src="./images/profile-' + response.user + '.jpg"></div><div class="ingo">'
-        + '<h3>' + response.firstname + ' ' + response.lastname + '</h3>'
-        + '<small>' + response.city + ', 15 MINUTES AGO</small>'
+        + '<img src="./images/profile-' + post.user + '.jpg"></div><div class="ingo">'
+        + '<h3>' + post.firstname + ' ' + post.lastname + '</h3>'
+        + '<small>' + post.city + ', 15 MINUTES AGO</small>'
         + '</div></div><span class="edit"><i class="uil uil-ellipsis-h"></i></span></div>'
-        + '<div class="text" id="id_post_div_' + response.id + '">' + response.text + '</div>'
-        + '<img alt="no image uploaded" src="socialnetwork/photo/' + response.id + '" id="id_picture_' + response.id + '"></img>'
+        + '<div class="text" id="id_post_div_' + post.id + '">' + post.text + '</div>'
+        + '<img alt="no image uploaded" src="socialnetwork/photo/' + post.id + '" id="id_picture_' + post.id + '"></img>'
         + '<div class="action-buttons"><div class="interaction-buttons"><span><i class="uil uil-heart"></i></span><span><i class="uil uil-comment-dots"></i></span><span><i class="uil uil-share-alt"></i></span></div><div class="bookmark"><span><i class="uil uil-bookmark-full"></i></span></div></div>'
         + '<div class="liked-by"><span><img src="./images/profile-10.jpg"></span><span><img src="./images/profile-4.jpg"></span><span><img src="./images/profile-15.jpg"></span><p>Liked by <b>UserC</b> and <b>4 others</b></p></div>'
-        + '<div class="comments text-muted">View all 277 comments</div></div>'
+        + '<div id="comment_display_' + post.id + '"class="comments text-muted"><button onClick="displayComments(' + post.id + ')">View all ' + comments.length + ' comments</button></div>'
+        + '<div id="comments_post_div_' + post.id + '" style="display:none">'
+    
+    for (let i = 0; i<comments.length; i += 1){
+        comment = comments[i]
+        console.log(comment.text)
+        comment_result = '<div class="text" id="id_comment_div_' + comment.id + '">' + comment.text + 
+        '<h3>' + comment.firstname + ' ' + comment.lastname + '</h3></div>'
+        result += comment_result
+    }
+    result += '</div></div>'
+    
     return result
 }
 

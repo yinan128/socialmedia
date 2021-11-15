@@ -24,6 +24,7 @@ def get_local(request, longitude, latitude):
 
     for post in posts:
         geolocator = Nominatim(user_agent="geoapiExercises")
+        post_as_whole = {}
         my_post = {
             'type': 'post',
             'id': post.id,
@@ -36,7 +37,22 @@ def get_local(request, longitude, latitude):
             'latitude': post.latitude,
             'city': post.city
         }
-        response_data.append(my_post)
+        comments = post.comment.all()
+        comment_list = []
+        for comment in comments:
+            my_comment = {
+                'type': 'comment',
+                'id': comment.id,
+                'user': comment.user.username,
+                'firstname': post.user.first_name,
+                'lastname': post.user.last_name,
+                'text': post.text,
+                'created_time': post.time.isoformat()
+            }
+            comment_list.append(my_comment)
+        post_as_whole['post'] = my_post
+        post_as_whole['comments'] = comment_list
+        response_data.append(post_as_whole)
 
     response_json = json.dumps(response_data)
     response = HttpResponse(response_json, content_type='application/json')
@@ -172,7 +188,7 @@ def get_posts(request):
     response_data = []
     for post in Post.objects.all().order_by('time'):
         geolocator = Nominatim(user_agent="geoapiExercises")
-        
+        post_as_whole = {}
         my_post = {
             'type': 'post',
             'id': post.id,
@@ -185,7 +201,22 @@ def get_posts(request):
             'latitude': post.latitude,
             'city': post.city
         }
-        response_data.append(my_post)
+        comments = post.comment.all()
+        comment_list = []
+        for comment in comments:
+            my_comment = {
+                'type': 'comment',
+                'id': comment.id,
+                'user': comment.user.username,
+                'firstname': post.user.first_name,
+                'lastname': post.user.last_name,
+                'text': post.text,
+                'created_time': post.time.isoformat()
+            }
+            comment_list.append(my_comment)
+        post_as_whole['post'] = my_post
+        post_as_whole['comments'] = comment_list
+        response_data.append(post_as_whole)
 
     response_json = json.dumps(response_data)
     response = HttpResponse(response_json, content_type='application/json')
