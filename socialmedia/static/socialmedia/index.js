@@ -446,7 +446,7 @@ function postFormatter(response) {
         + '<small>' + post.city + ', 15 MINUTES AGO</small>'
         + '</div></div><span class="edit"><i class="uil uil-ellipsis-h"></i></span></div>'
         + '<div class="text" id="id_post_div_' + post.id + '">' + post.text + '</div>'
-        + '<img alt="no image uploaded" src="socialnetwork/photo/' + post.id + '" id="id_picture_' + post.id + '"></img>'
+
         + '<div class="action-buttons"><div class="interaction-buttons"><span><i class="uil uil-heart"></i></span><span><i class="uil uil-comment-dots"></i></span><span><i class="uil uil-share-alt"></i></span></div><div class="bookmark"><span><i class="uil uil-bookmark-full"></i></span></div></div>'
         + '<div class="liked-by"><span><img src="./images/profile-10.jpg"></span><span><img src="./images/profile-4.jpg"></span><span><img src="./images/profile-15.jpg"></span><p>Liked by <b>UserC</b> and <b>4 others</b></p></div>'
         + '<div id="comment_display_' + post.id + '"class="comments text-muted"><button onClick="displayComments(' + post.id + ')">View all ' + comments.length + ' comments</button></div>'
