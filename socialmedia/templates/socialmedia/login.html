@@ -10,7 +10,7 @@
   {% if user.is_authenticated %}
     <h3>Welcome {{ user.username }} !!!</h3>
     <br /><br />
-    <a href="{% url 'account_logout' %}" class="btn btn-danger">Logout</a>
+    <a href="{% url 'account_logout' %}" class="btn btn-secondary">Logout</a>
   {% else %}
   <a href="{% provider_login_url 'github' %}" class="btn btn-secondary">
     <i class="fa fa-github fa-fw"></i>
@@ -20,9 +20,9 @@
     <i class="customGPlusSignIn"></i>
     <img class="google-icon-svg" 
     src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg"
-    style="width:15px;height:15px;"
+    style="width:13px;height:13px;"
     />
-    <span >Login With Google</span>
+    <span >Login with Google</span>
   </a>
   {% endif %}
 </div>

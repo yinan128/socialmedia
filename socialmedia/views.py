@@ -7,6 +7,7 @@ from socialmedia.models import *
 from socialmedia.forms import *
 from geopy.geocoders import Nominatim
 from newsapi import NewsApiClient
+from allauth.socialaccount.models import SocialAccount
 
 import json
 
@@ -41,6 +42,14 @@ def add_profile(user):
     except Profile.DoesNotExist:
         userProfile_obj = Profile()
         userProfile_obj.user = user
+
+        if user.socialaccount_set.filter(provider='google'):
+            print(SocialAccount.objects.get(user=user).extra_data['picture'])
+            userProfile_obj.picture = SocialAccount.objects.get(user=user).extra_data['picture']
+        else:
+            print(user.socialaccount_set.filter(provider='github')[0])
+            userProfile_obj.picture = SocialAccount.objects.get(user=user).extra_data['avatar_url']
+            
         userProfile_obj.save()
 
 # Create your views here.
@@ -57,7 +66,7 @@ def global_stream(request):
         'first_name': request.user.first_name,
         'last_name': request.user.last_name,
         'username': request.user.username,
-        'picture_link': user.picture,
+        'picture': user.picture,
     }
     context['form'] = PostForm()
     return render(request, 'socialmedia/index.html', context=context)

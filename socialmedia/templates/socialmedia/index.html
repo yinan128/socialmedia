@@ -30,7 +30,7 @@
             </div>
             <div class="create">
                 <div class="profile-photo">
-                    <img src="{{ user.socialaccount_set.all.0.get_avatar_url }}">
+                    <img src="{{picture}}">
                 </div>
                 <div>
                     <a href="{% url 'account_logout' %}">logout</a>
@@ -46,7 +46,7 @@
             <div class="left">
                 <a class="profile">
                     <div class="profile-photo">
-                        <img src="{{ user.socialaccount_set.all.0.get_avatar_url }}">
+                        <img src="{{picture}}">
                     </div>
                     <div class="handle">
                         <h4>{{first_name}} {{last_name}}</h4>
