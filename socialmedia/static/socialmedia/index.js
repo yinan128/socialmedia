@@ -243,6 +243,8 @@ function acquireCurrLocation() {
 
 // ======================== SWITCH CHANNELS =========================
 function switchToLocalChannel() {
+    // change menu item ui color
+    highlightMenuItem("localChannel")
     // delete all middle part.
     document.getElementById("middlePart").innerHTML = '<div class="feeds" id="allNews"></div>'
     $.ajax({
@@ -260,6 +262,8 @@ function switchToLocalChannel() {
 
 
 function switchToGlobalChannel() {
+    // change menu item ui color
+    highlightMenuItem("globalChannel")
     // delete all middle part.
     if (document.getElementById("create-post") != null) return
     document.getElementById("middlePart").innerHTML =
@@ -290,6 +294,8 @@ function switchToGlobalChannel() {
 }
 
 function switchToMapit() {
+    // change menu item ui color
+    highlightMenuItem("mapitChannel")
     // delete all middle part.
     if (document.getElementById("mapitPlaceholder") != null) return
     document.getElementById("middlePart").innerHTML =
@@ -488,6 +494,15 @@ function updateError(xhr) {
 function displayError(message) {
     $("#error").html(message);
 }
+
+function highlightMenuItem(id) {
+    // change the color of the channel.
+    let currentActive = document.getElementsByClassName("menu-item active")
+    currentActive[0].className = currentActive[0].className.replace(" active", "")
+    document.getElementById(id).className += " active"
+
+}
+
 
 // get posts
 function getPosts() {
