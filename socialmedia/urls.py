@@ -5,5 +5,8 @@ urlpatterns = [
     path('', views.global_stream, name='global_stream'),
     path('login', views.login_action, name='login'),
     path('post', views.post_action, name='post'),
+    path('get-posts', views.get_posts),
+    path('get-local-news', views.get_news),
+    path('addPost', views.addPost, name='newPost')
 
 ]

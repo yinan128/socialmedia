@@ -2,6 +2,7 @@ from django.db import models
 
 from django.contrib.auth.models import User
 from django.db.models.fields import CharField
+from ckeditor.fields import RichTextField
 
 # Create your models here.
 class Comment(models.Model):
@@ -22,6 +23,7 @@ class Post(models.Model):
     comment = models.ManyToManyField(Comment)
     latitude = models.FloatField(default=0.0)
     longitude = models.FloatField(default=0.0)
+    body = RichTextField(blank=True, null=True)
 
 
 class Group(models.Model):
