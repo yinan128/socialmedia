@@ -38,7 +38,7 @@ When you makemigrations and migrate
    
 6. Fill the form as the following 
 
-   ![1](./pic/google.png)
+![1](./pic/google.png)
 
     The Client id is : 1011702883228-f4q0o9ur66ndpb2gh8fb8sm8npduagu3.apps.googleusercontent.com
     
