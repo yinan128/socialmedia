@@ -129,6 +129,54 @@ def get_posts(request):
     return response
 
 
+def get_nearbyPosts(request):
+    response_data = []
+    # # add the request info at the beginning of the response json.
+    # response_data.append({
+    #     'type': 'request',
+    #     'id': -1,
+    #     'user': request.user.username,
+    #     'firstname': request.user.first_name,
+    #     'lastname': request.user.last_name,
+    #     'text': "",
+    #     'created_time': timezone.now().isoformat(),
+    #     'longitude': request.POST["long"],
+    #     'latitude': request.POST["lat"],
+    #     'city': ""
+    # })
+
+    for post in Post.objects.all().order_by('time'):
+        geolocator = Nominatim(user_agent="geoapiExercises")
+        location = geolocator.reverse(str(post.latitude) + "," + str(post.longitude))
+        city = location.raw['address']['city']
+        my_post = {
+            'type': 'post',
+            'id': post.id,
+            'user': post.user.username,
+            'firstname': post.user.first_name,
+            'lastname': post.user.last_name,
+            'text': cleanText(post.text),
+            'created_time': post.time.isoformat(),
+            'longitude': post.longitude,
+            'latitude': post.latitude,
+            'city': city
+        }
+        response_data.append(my_post)
+
+    response_json = json.dumps(response_data)
+    response = HttpResponse(response_json, content_type='application/json')
+    response['Access-Control-Allow-Origin'] = '*'
+    return response
+
+def cleanText(text):
+    return text.replace("<p>","").replace("</p>","")\
+        .replace("&nbsp;","<br>")\
+        .replace("<strong>","<b>").replace("</strong>","</b>")\
+        .replace("<h2>","").replace("</h2>","")\
+        .replace("<h3>","").replace("</h3>","<br>")\
+        .replace("<h3>","").replace("</h3>","<br>")
+
+
 # todo: error handling.
 def get_news(request):
     response_data = []
@@ -136,15 +184,17 @@ def get_news(request):
     location = geolocator.reverse(str(request.POST['lat']) + "," + str(request.POST['long']))
     city = location.raw['address']['city']
     i = 0
-    for title, publish, description, url in getNewsFromCity(city):
+    for title, author, publish, description, url, imageUrl in getNewsFromCity(city):
         response_data.append({
             "title": title,
+            "author": author,
             "publish": publish,
             "description": description,
-            "url": url
+            "url": url,
+            "imageUrl": imageUrl
         })
         i += 1
-        if i == 10: break
+        if i == 20: break
 
     response_json = json.dumps(response_data)
     response = HttpResponse(response_json, content_type='application/json')
@@ -186,4 +236,6 @@ def getNewsFromCity(city):
     )
 
     for article in all_articles['articles']:
-        yield article['title'], article['publishedAt'], article['description'], article['url']
+        yield article['title'], article['source']['name'], article['publishedAt'], article['description'], article['url'], article['urlToImage']
+
+

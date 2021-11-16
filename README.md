@@ -57,3 +57,13 @@ When you makemigrations and migrate
     The Secret key is : 7f127bb3155544d70d0413b8d95a5c51afc0a3ed
 
 10. Click SAVE, this is done for GitHub OAuth
+## finished on this stage
+visualization of posts on map
+transform the date to be date difference.
+make currLocation a global variable, so no need to acquire geolocation every time.
+
+## to be done
+need to filter out the posts that are in users area (<5km?)
+local news need to have caption, auther, datetime and picture.
+
+

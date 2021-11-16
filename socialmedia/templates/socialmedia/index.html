@@ -16,6 +16,8 @@
             crossorigin="anonymous"></script>
     <script src="{% static 'socialmedia/index.js' %}?v={% now 'U' %}" type="text/javascript"></script>
     <script src="{% static 'socialmedia/ckeditor.js' %}"></script>
+    <script src="{% static 'socialmedia/plotly-2.4.2.min.js' %}"></script>
+    <script src="{% static 'socialmedia/luxon.min.js' %}"></script>
 </head>
 
 <body>
@@ -64,7 +66,7 @@
                     <a class="menu-item" onclick="switchToLocalChannel()" id="localChannel">
                         <span><i class="uil uil-home"></i></span><h3>Local Channel</h3>
                     </a>
-                    <a class="menu-item">
+                    <a class="menu-item" onclick="switchToMapit()" id="mapitChannel">
                         <span><i class="uil uil-compass"></i></span><h3>Map it</h3>
                     </a>
                     <a class="menu-item" id="notifications">
@@ -460,9 +462,9 @@
 <!-- <script src="socialmedia/index.js"></script> -->
 <script>
     //Call getList() as soon as page is finished loading to display the to do list
-    window.onload = getPosts;
+    window.onload = onloadEvents;
     //... also call getList every 3 seconds hereafter to update the list
-    window.setInterval(getPosts, 3000);
+    {#window.setInterval(getPosts, 3000);#}
 </script>
 
 </body>
