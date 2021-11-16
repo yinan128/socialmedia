@@ -403,7 +403,7 @@ function postFormatter(response) {
     let end = luxon.DateTime.fromJSDate(new Date())
     let diff = end.diff(start, ['days', 'hours', 'minutes']).toObject()
 
-    result = '<div class="feed"><div class="head"><div class="user"><div class="profile-photo">'
+    let result = '<div class="feed"><div class="head"><div class="user"><div class="profile-photo">'
         + '<img src="./images/profile-' + response.user + '.jpg"></div><div class="ingo">'
         + '<h3>' + response.firstname + ' ' + response.lastname + '</h3>'
         + '<small>' + response.city + ', ' + dateDiffFormatter(diff) + '</small>'
@@ -415,9 +415,24 @@ function postFormatter(response) {
     return result
 }
 
+function convertUTCDateToLocalDate(date) {
+    var newDate = new Date(date.getTime() - date.getTimezoneOffset()*60*1000);
+    return newDate;
+}
 
 function newsFormatter(news) {
-    result = '<div class="feed"><div class="text">' + news.title +'</div></div>'
+    let start = luxon.DateTime.fromJSDate(new Date(news.publish))
+    let end = luxon.DateTime.fromJSDate(new Date())
+    let diff = end.diff(start, ['days', 'hours', 'minutes']).toObject()
+
+    let result = '<div class="feed">' +
+        '<div class="head">' +
+        '<div class="ingo">' +
+        '<a href="' + news.url + '"><h3>' +news.title + '</h3></a>' +
+        '<small>'+ news.author + ', ' + dateDiffFormatter(diff) +'</small>' +
+        '</div>' +
+        '</div>' +
+        '<div><img src="' + news.imageUrl + '"></div>'
     return result
 }
 

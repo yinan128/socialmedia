@@ -163,15 +163,17 @@ def get_news(request):
     location = geolocator.reverse(str(request.POST['lat']) + "," + str(request.POST['long']))
     city = location.raw['address']['city']
     i = 0
-    for title, publish, description, url in getNewsFromCity(city):
+    for title, author, publish, description, url, imageUrl in getNewsFromCity(city):
         response_data.append({
             "title": title,
+            "author": author,
             "publish": publish,
             "description": description,
-            "url": url
+            "url": url,
+            "imageUrl": imageUrl
         })
         i += 1
-        if i == 10: break
+        if i == 20: break
 
     response_json = json.dumps(response_data)
     response = HttpResponse(response_json, content_type='application/json')
@@ -213,6 +215,6 @@ def getNewsFromCity(city):
     )
 
     for article in all_articles['articles']:
-        yield article['title'], article['publishedAt'], article['description'], article['url']
+        yield article['title'], article['source']['name'], article['publishedAt'], article['description'], article['url'], article['urlToImage']
 
 
