@@ -15,6 +15,7 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.conf.urls import url
 from django.contrib.auth import views as auth_views
 from socialmedia import views
 
@@ -24,6 +25,12 @@ urlpatterns = [
     # path('oauth/', include('social_django.urls', namespace='social')),
     # path('logout/', auth_views.logout_then_login, name='logout'),
     path('login/', views.login, name='login'),
-    path('socialmedia/', include('socialmedia.urls')),
     path("accounts/", include("allauth.urls")),
+    path('logout', auth_views.logout_then_login, name='logout'),
+    path('local_stream', views.local_stream, name='local'),
+    path('socialnetwork/get-local/<longitude>/<latitude>/', views.get_local),
+    url(r'profile-photo/(?P<id>\d+)$', views.photo, name='photo'),
+    url(r'photo/(?P<id>\d+)$', views.post_photo),
+    path('socialmedia/', include('socialmedia.urls')),
+    path('socialnetwork/add-comment', views.add_comment, name='ajax-add-comment')
 ]

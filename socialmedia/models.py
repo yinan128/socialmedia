@@ -23,8 +23,8 @@ class Post(models.Model):
     comment = models.ManyToManyField(Comment)
     latitude = models.FloatField(default=0.0)
     longitude = models.FloatField(default=0.0)
+    city = models.CharField(max_length=50, default="Pittsburgh")
     body = RichTextField(blank=True, null=True)
-
 
 class Group(models.Model):
     name: models.CharField(max_length=40)
