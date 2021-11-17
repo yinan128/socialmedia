@@ -695,8 +695,15 @@
         for( var i=0; i<edit_vis.length; i++ ) {
             edit_vis[i].addEventListener('click', show_edit_visibility)
         }
-
+        document.onclick = function(event) {
+            var a = event.target;
+            vis_div = document.getElementById("visibility-form")
+            if( !(a == vis_div || vis_div.contains(a))) {
+                overlay_off();
+            }
+        }
     }
+
     //... also call getList every 3 seconds hereafter to update the list
     // window.setInterval(getPosts, 3000);
 </script>

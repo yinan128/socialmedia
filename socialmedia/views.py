@@ -71,7 +71,8 @@ def post_action(request):
         text = request.POST['text'],
         time = timezone.now(),
         latitude = request.POST['lat'],
-        longitude = request.POST['long']
+        longitude = request.POST['long'],
+        visibility = request.POST['visibility'],
     )
     print(post.longitude)
     print(post.latitude)
@@ -84,6 +85,7 @@ def post_action(request):
 def get_posts(request):
     response_data = []
     for post in Post.objects.all().order_by('time'):
+
         geolocator = Nominatim(user_agent="geoapiExercises")
         location = geolocator.reverse(str(post.latitude) + "," + str(post.longitude))
         city = location.raw['address']['city']
@@ -97,9 +99,25 @@ def get_posts(request):
             'created_time': post.time.isoformat(),
             'longitude': post.longitude,
             'latitude': post.latitude,
-            'city': city
+            'city': city,
+            'mine': (post.user == request.user),
         }
-        response_data.append(my_post)
+        # Check post visibility
+        if( post.visibility == "Public" or my_post['mine']):
+            response_data.append(my_post)
+
+        elif( post.visibility == "Private" and post.user == request.user):
+            response_data.append(my_post)
+
+        elif( post.visibility == "Group" ) :
+            found = False
+            for group in post.hide_groups.all():
+                if request.user in group.users.all():
+                    found = True
+            if not found:
+                response_data.append(my_post)
+
+
 
     response_json = json.dumps(response_data)
     response = HttpResponse(response_json, content_type='application/json')
@@ -136,20 +154,25 @@ def set_post_visibility(request):
     # Private
     if(request.POST['post_vis_option'] == "private"):
         print("-----PRIVATE-----")
+        post.visibility = "Private"
         for grp in Group.objects.all():
             post.hide_groups.add(get_object_or_404(Group, id=grp.id))
+        post.save()
         return redirect(reverse('global_stream'))
 
     # Public
     if(request.POST['post_vis_option'] == "public"):
         print("-----Public-----")
+        post.visibility = "Public"
         for grp in post.hide_groups.all():
             grp_obj = get_object_or_404(Group, id=grp.id)
             post.hide_groups.remove(grp_obj) 
+        post.save()
         return redirect(reverse('global_stream'))
 
     # Group
     print("-----Group-----")
+    post.visibility = "Group"
     gid_keys = []
     for key,value in request.POST.items():
         if key.startswith("group_"):
@@ -163,9 +186,37 @@ def set_post_visibility(request):
     for key in gid_keys:
         gid = int(request.POST[key])
         post.hide_groups.add(get_object_or_404(Group, id=gid))
+    post.save()
 
     return redirect(reverse('global_stream'))
 
+def get_post_visibility(request): 
+    post_id = request.POST['post_id']
+
+    post = get_object_or_404(Post, id=post_id)
+    response_data = []
+    response_data.append({'visibility':post.visibility})
+    if post.visibility == "Group":
+        groups = post.hide_groups.all()
+        for group in groups:
+            users_list = []
+            for user in group.users.all():
+                user_info = {
+                    'user_id': user.id
+                }
+                users_list.append(user_info)
+
+            group_info = {
+                'group_id': group.id,
+                'group_name': group.name,
+                'group_users': users_list
+            }
+            response_data.append(group_info)
+
+    response_json = json.dumps(response_data)
+    response = HttpResponse(response_json, content_type='application/json')
+    response['Access-Control-Allow-Origin'] = '*'
+    return response
 
 def get_groups(request):
     groups = Group.objects.all()

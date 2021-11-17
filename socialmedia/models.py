@@ -31,6 +31,7 @@ class Post(models.Model):
     latitude = models.FloatField(default=0.0)
     longitude = models.FloatField(default=0.0)
     body = RichTextField(blank=True, null=True)
+    visibility = models.CharField(max_length=10)
     hide_groups = models.ManyToManyField(Group, default=None)
 
 
@@ -42,3 +43,4 @@ class Profile(models.Model):
     # blacklist = models.ManyToManyField(User)
     # following = models.ManyToManyField(User)
     groups = models.ManyToManyField(Group)
+

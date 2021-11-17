@@ -250,6 +250,7 @@ function postAfterGeoAquired(position) {
             text: post_body,
             lat: position.coords.latitude,
             long: position.coords.longitude,
+            visibility: 'Public',
             csrfmiddlewaretoken: getCSRFToken()
         },
         success: updatePosts,
@@ -292,14 +293,27 @@ function show_edit_visibility() {
     var text_div = feed_div.getElementsByClassName("text")[0]
     var post_id = text_div.id.split("_").at(-1)
     post_id = parseInt(post_id)
-    overlay_on(post_id)
+    $.ajax({
+        url: '/socialmedia/get-visibility',
+        method: 'POST',
+        data: {
+            'post_id': post_id,
+            csrfmiddlewaretoken: getCSRFToken(),
+        },
+        success: function(response) {
+            overlay_on(post_id, response);
+        },
+        error: updateError,
+    })
 }
 
-function update_groups_options() {
+function update_groups_options(groups) {
     $.ajax({
         url: "/socialmedia/get-groups",
         datatype: "json",
-        success: update_vis_form,
+        success: function(response) {
+            update_vis_form(response, groups);
+        },
         error: updateError
     })
 }
@@ -308,7 +322,7 @@ function edit_post_vis() {
     post_id = parseInt(document.getElementById("post_vis_id").value)
     console.log("post id is "+post_id)
     $.ajax({
-        url: "/socialmedia/set-visibility/"+post_id,
+        url: "/socialmedia/set-visibility/",
         datatype: "json",
         success: function() {
             overlay_off();
@@ -325,24 +339,57 @@ function remove_groups_options() {
     document.getElementById("select-groups").innerHTML = ""
 }
 
-function update_vis_form(response) {
+function update_vis_form(response, groups) {
     var check_div = document.getElementById("select-groups")
     var innerHtml = ""
+    hide_group_ids = []
+    if(groups != null) {
+        for(var j=1; j<groups.length; j++) {
+            hide_group_ids.push(groups[j]['group_id'])
+        }
+    }
+    console.log(hide_group_ids)
     for(var i=0; i<response.length; i++) {
         gid = response[i]['group_id']
         gname = response[i]['group_name']
-        innerHtml += '<input type="checkbox" id="select_group_'+ gid 
-                  + '" name="group_' + i + '" value="' + gid + '">'
-                  + '<label for="select_group_' + gid + '"> '+ gname 
-                  + '</label><br>'
+        if(hide_group_ids.includes(gid)) {
+            innerHtml += '<input type="checkbox" id="select_group_'+ gid 
+                      + '" name="group_' + i + '" value="' + gid + '" checked>'
+                      + '<label for="select_group_' + gid + '"> '+ gname 
+                      + '</label><br>'
+        }
+        else {
+            innerHtml += '<input type="checkbox" id="select_group_'+ gid 
+                      + '" name="group_' + i + '" value="' + gid + '">'
+                      + '<label for="select_group_' + gid + '"> '+ gname 
+                      + '</label><br>'
+        }
     }
     check_div.innerHTML = innerHtml
 }
 
 
-function overlay_on(post_id) {
+function overlay_on(post_id, response) {
     document.getElementById("visibility-overlay").style.display = "block"
     document.getElementById("post_vis_id").value=post_id
+    console.log(response)
+    if(response[0]['visibility'] == "Private") {
+        document.getElementById("public_vis").checked=false;
+        document.getElementById("group_vis").checked=false;
+        document.getElementById("private_vis").checked=true;
+    }
+    if(response[0]['visibility'] == "Group") {
+        document.getElementById("public_vis").checked=false;
+        document.getElementById("private_vis").checked=false;
+        document.getElementById("group_vis").checked=true;
+
+        update_groups_options(response);
+        // for(var i=1; i<response.length; i++) {
+        //     group_id = "select_group_"+response[i]['group_id']
+        //     console.log(document.getElementById(group_id))
+        //     document.getElementById(group_id).checked=true
+        // }
+    }
 }
 
 function overlay_off() {
@@ -351,19 +398,21 @@ function overlay_off() {
 
 
 
-
-
-
-
-
 // ======================== Text Formatter =========================
 function postFormatter(response) {
+    console.log(response['mine'])
     result = '<div class="feed"><div class="head"><div class="user"><div class="profile-photo">'
         + '<img src="./images/profile-' + response.user + '.jpg"></div><div class="ingo">'
         + '<h3>' + response.firstname + ' ' + response.lastname + '</h3>'
         + '<small>' + response.city + ', 15 MINUTES AGO</small>'
-        + '</div></div><div class="edit"><button class="uil uil-ellipsis-h"></button>'
-        + '<div class="edit-dropdown-content"> <a class="edit-post">Edit</a> '
+        + '</div></div><div class="edit">'
+
+    // Only show ellipsis button if it's mine post
+    if(response['mine'] == true) {
+        result += '<button class="uil uil-ellipsis-h"></button>'
+    }
+
+    result += '<div class="edit-dropdown-content"> <a class="edit-post">Edit</a> '
         + '<a class="set-visib">Visibility</a></div> </div></div>'
         + '<div class="text" id="id_post_div_' + response.id + '">' + response.text + '</div>'
         + '<div class="action-buttons"><div class="interaction-buttons"><span><i class="uil uil-heart"></i></span><span><i class="uil uil-comment-dots"></i></span><span><i class="uil uil-share-alt"></i></span></div><div class="bookmark"><span><i class="uil uil-bookmark-full"></i></span></div></div>'
