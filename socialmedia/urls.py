@@ -8,6 +8,9 @@ urlpatterns = [
     path('get-posts', views.get_posts),
     path('get-postsNearby', views.get_nearbyPosts),
     path('get-local-news', views.get_news),
-    path('addPost', views.addPost, name='newPost')
+    path('addPost', views.addPost, name='newPost'),
+    path('get-local/<str:longitude>/<str:latitude>/', views.get_local),
+    path('add-comment', views.add_comment),
+
 
 ]

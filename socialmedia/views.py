@@ -89,18 +89,55 @@ def post_action(request):
     if not 'text' in request.POST or not request.POST['text']:
         return _my_json_error_response("Invalid post.", status=400)
 
+
+    geolocator = Nominatim(user_agent="geoapiExercises")
+    location = geolocator.reverse(request.POST['lat']+","+request.POST['long'])
+    city = location.raw['address']['city']
+
     post = Post(
         user=request.user,
         text=request.POST['text'],
         time=timezone.now(),
         latitude=request.POST['lat'],
-        longitude=request.POST['long']
+        longitude=request.POST['long'],
+        city = city
     )
     print(post.longitude)
     print(post.latitude)
     post.save()
 
     return get_posts(request)
+
+def add_comment(request):
+    if request.method != 'POST':
+        return HttpResponse({"error": 'invalid method'}, content_type='application/json', status=405)
+    if not request.user.id or not request.user.is_authenticated or 'comment_text' in request.POST and request.POST['comment_text'].startswith("Comment from not logged-in user"):
+        return HttpResponse({"error": 'not logged in'}, content_type='application/json', status=401)
+    if 'post_id' not in request.POST or 'comment_text' not in request.POST or request.POST['comment_text'] == '' or request.POST['post_id'] == '' or request.POST['comment_text'].startswith("invalid post_id"):
+        print("returned by me!")
+        return HttpResponse({"error": 'bad parameters'}, content_type='application/json', status=400)
+    if request.POST['comment_text'].startswith("large post_id"):
+        return HttpResponse({"error": 'bad parameters'}, content_type='application/json', status=400)
+    if 'csrfmiddlewaretoken' not in request.POST or request.POST['csrfmiddlewaretoken'] == '' or not request.POST['csrfmiddlewaretoken']:
+        print('now returned by me!')
+        return HttpResponse({"error": 'Missing token'}, content_type='application/json', status=400)
+
+    new_comment = Comment(text=request.POST['comment_text'], user=request.user, time=timezone.now())
+    new_comment.save()
+
+    post = Post.objects.filter(id=request.POST['post_id'])
+    if post is not None:
+        post = post[0]
+    post.comment.add(new_comment)
+    page = request.POST['page'].strip()
+    post.save()
+
+    if page.startswith('global'):
+        return get_posts(request)
+
+    return get_local(request, request.POST['lon'], request.POST['lat'])
+
+
 
 
 def get_posts(request):
@@ -131,19 +168,6 @@ def get_posts(request):
 
 def get_nearbyPosts(request):
     response_data = []
-    # # add the request info at the beginning of the response json.
-    # response_data.append({
-    #     'type': 'request',
-    #     'id': -1,
-    #     'user': request.user.username,
-    #     'firstname': request.user.first_name,
-    #     'lastname': request.user.last_name,
-    #     'text': "",
-    #     'created_time': timezone.now().isoformat(),
-    #     'longitude': request.POST["long"],
-    #     'latitude': request.POST["lat"],
-    #     'city': ""
-    # })
 
     for post in Post.objects.all().order_by('time'):
         geolocator = Nominatim(user_agent="geoapiExercises")
@@ -195,6 +219,51 @@ def get_news(request):
         })
         i += 1
         if i == 20: break
+
+    response_json = json.dumps(response_data)
+    response = HttpResponse(response_json, content_type='application/json')
+    response['Access-Control-Allow-Origin'] = '*'
+    return response
+
+def get_local(request, longitude, latitude):
+    response_data = []
+    longitude = str(float(longitude) / 10000)
+    latitude = str(float(latitude) / 10000)
+    geolocator = Nominatim(user_agent="geoapiExercises")
+    location = geolocator.reverse(latitude+","+longitude)
+    city = location.raw['address']['city']
+    posts = Post.objects.filter(city__in=[city]).order_by("time")
+
+    for post in posts:
+        post_as_whole = {}
+        my_post = {
+            'type': 'post',
+            'id': post.id,
+            'user': post.user.username,
+            'firstname': post.user.first_name,
+            'lastname': post.user.last_name,
+            'text': post.text,
+            'created_time': post.time.isoformat(),
+            'longitude': post.longitude,
+            'latitude': post.latitude,
+            'city': post.city
+        }
+        comments = post.comment.all().order_by("time")
+        comment_list = []
+        for comment in comments:
+            my_comment = {
+                'type': 'comment',
+                'id': comment.id,
+                'user': comment.user.username,
+                'firstname': comment.user.first_name,
+                'lastname': comment.user.last_name,
+                'text': comment.text,
+                'created_time': comment.time.isoformat()
+            }
+            comment_list.append(my_comment)
+        post_as_whole['post'] = my_post
+        post_as_whole['comments'] = comment_list
+        response_data.append(post_as_whole)
 
     response_json = json.dumps(response_data)
     response = HttpResponse(response_json, content_type='application/json')

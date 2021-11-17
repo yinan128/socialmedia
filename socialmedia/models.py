@@ -18,11 +18,11 @@ class Post(models.Model):
     text = models.CharField(max_length=200)
     image = models.FileField(blank=True)
     content_type = models.CharField(max_length=50)
-    font = models.CharField(max_length=50)
     time = models.DateTimeField(blank=True)
     comment = models.ManyToManyField(Comment)
     latitude = models.FloatField(default=0.0)
     longitude = models.FloatField(default=0.0)
+    city = models.CharField(max_length=50)
     body = RichTextField(blank=True, null=True)
 
 

@@ -19,6 +19,7 @@ const Bg3 = document.querySelector('.bg-3');
 
 // current location of the user.
 var currLocation;
+var currPage = "globalChannel";
 
 
 // ================ SIDEBAR ===============
@@ -242,9 +243,11 @@ function acquireCurrLocation() {
 
 
 // ======================== SWITCH CHANNELS =========================
-function switchToLocalChannel() {
+function switchToLocalNews() {
     // change menu item ui color
-    highlightMenuItem("localChannel")
+    highlightMenuItem("localNews")
+    if (currPage == "localNews") return
+    currPage = "localNews"
     // delete all middle part.
     document.getElementById("middlePart").innerHTML = '<div class="feeds" id="allNews"></div>'
     $.ajax({
@@ -260,12 +263,19 @@ function switchToLocalChannel() {
     })
 }
 
+function updateNews(response) {
+    $(response).each(function() {
+        $("#allNews").append(newsFormatter(this))
+    })
+}
+
 
 function switchToGlobalChannel() {
     // change menu item ui color
     highlightMenuItem("globalChannel")
+    if (currPage == "globalChannel") return
+    currPage = "globalChannel"
     // delete all middle part.
-    if (document.getElementById("create-post") != null) return
     document.getElementById("middlePart").innerHTML =
         '<div class="create-post" id="create-post">' +
         '<div id="editor"><script>let editor</script></div>' +
@@ -293,11 +303,85 @@ function switchToGlobalChannel() {
 
 }
 
+
+function updatePosts(response) {
+    // todo: clean deleted posts.
+    // new post found.
+    $(response).each(function() {
+        if (this.type == "comment") {
+            return
+        }
+        let post_id = "id_post_div_"+this.id
+        if (document.getElementById(post_id) == null) {
+            $("#allFeeds").prepend(postFormatter(this))
+        }
+    })
+}
+
+
+
+
+function switchToLocalStream() {
+    // change menu item ui color
+    highlightMenuItem("localStream")
+    if (currPage == "localStream") return
+    currPage = "localStream"
+    // delete all middle part.
+    document.getElementById("middlePart").innerHTML =
+        '<div class="create-post" id="create-post">' +
+        '<div id="editor"><script>let editor</script></div>' +
+        '<input type="submit" value="Post" class="btn btn-primary btn-floatright" onclick="postAction()">' +
+        '</div>' +
+        '<div class="feeds" id="allFeeds"></div>'
+
+
+    ClassicEditor
+        .create( document.querySelector( '#editor' ))
+        .then( newEditor => {
+            editor = newEditor;
+        } )
+        .catch( error => {
+            console.error( error );
+        } );
+
+    //suppose the geolocation is cached.
+    let lat = parseInt(10000 * currLocation.coords.latitude).toString();
+    let lon = parseInt(10000 * currLocation.coords.longitude).toString();
+
+    $.ajax({
+        url: "/socialmedia/get-local/"+lon+"/"+lat+"/",
+        type: "GET",
+        success: updateLocalPosts,
+        error: updateError
+    })
+}
+
+
+function updateLocalPosts(response) {
+    $(response).each(function() {
+        let post_id = "id_post_div_"+this.post.id
+        if (document.getElementById(post_id) == null) {
+            // new post found.
+            $("#allFeeds").prepend(postWithCommentsFormatter(this))
+        } else {
+            let comments = this.comments
+            let father = document.getElementById("comments_post_div_" + this.post.id)
+            for (let i=0; i<comments.length; i++){
+                if (document.getElementById("id_comment_div_"+comments[i].id) == null){
+                    $("#comments_post_div_"+this.post.id).prepend(commentFormatter(comments[i]))
+                }
+            }
+        }
+    })
+}
+
+
 function switchToMapit() {
     // change menu item ui color
     highlightMenuItem("mapitChannel")
+    if (currPage == "mapitChannel") return
+    currPage = "mapitChannel"
     // delete all middle part.
-    if (document.getElementById("mapitPlaceholder") != null) return
     document.getElementById("middlePart").innerHTML =
         '<div class="feeds" id="mapitPlaceholder" style="width:600px;height:450px;"></div>'
 
@@ -363,7 +447,7 @@ function updateMap(response) {
 // ======================== POST =========================
 
 function postAction() {
-    post_body = editor.getData()
+    let post_body = editor.getData()
     editor.setData('')
 
     $.ajax({
@@ -380,26 +464,28 @@ function postAction() {
     })
 }
 
+// ======================== Comment =========================
+function addComment(id) {
 
-function updatePosts(response) {
-    // todo: clean deleted posts.
-    // new post found.
-    $(response).each(function() {
-        if (this.type == "comment") {
-            return
-        }
-        let post_id = "id_post_div_"+this.id
-        if (document.getElementById(post_id) == null) {
-            $("#allFeeds").prepend(postFormatter(this))
-        }
+    let itemTextElement = document.getElementById("id_comment_input_text_" + id)
+    let itemTextValue = itemTextElement.value
+    itemTextElement.value = ''
+    $.ajax({
+        url: "/socialmedia/add-comment",
+        type: "POST",
+        data: {
+            comment_text: itemTextValue,
+            lat: currLocation.coords.latitude * 10000,
+            lon: currLocation.coords.longitude * 10000,
+            page: currPage,
+            post_id: id,
+            csrfmiddlewaretoken: getCSRFToken()
+        },
+        success: updateLocalPosts,
+        error: updateError
     })
 }
 
-function updateNews(response) {
-    $(response).each(function() {
-        $("#allNews").append(newsFormatter(this))
-    })
-}
 
 
 
@@ -420,6 +506,38 @@ function postFormatter(response) {
         + '<div class="comments text-muted">View all 277 comments</div></div>'
     return result
 }
+
+
+function postWithCommentsFormatter(response) {
+    let post = response.post
+    let comments = response.comments
+    let result = '<div class="feed"><div class="head"><div class="user"><div class="profile-photo">'
+        + '<img src="./images/profile-' + post.user + '.jpg"></div><div class="ingo">'
+        + '<h3>' + post.firstname + ' ' + post.lastname + '</h3>'
+        + '<small>' + post.city + ', 15 MINUTES AGO</small>'
+        + '</div></div><span class="edit"><i class="uil uil-ellipsis-h"></i></span></div>'
+        + '<div class="text" id="id_post_div_' + post.id + '">' + post.text + '</div>'
+
+        + '<div class="action-buttons"><div class="interaction-buttons"><span><i class="uil uil-heart"></i></span><span><i class="uil uil-comment-dots"></i></span><span><i class="uil uil-share-alt"></i></span></div><div class="bookmark"><span><i class="uil uil-bookmark-full"></i></span></div></div>'
+        + '<div class="liked-by"><span><img src="./images/profile-10.jpg"></span><span><img src="./images/profile-4.jpg"></span><span><img src="./images/profile-15.jpg"></span><p>Liked by <b>UserC</b> and <b>4 others</b></p></div>'
+
+        + '<div id="comment_display_' + post.id + '" class="comments text-muted" onclick="displayComments(' + post.id + ')">View all ' + comments.length + ' comments</div>'
+        + '<div id="comments_post_div_' + post.id + '" style="display:none">'
+
+    for (let i = 0; i<comments.length; i += 1){
+        let comment = comments[i]
+        console.log(comment.text)
+        let comment_result = '<div class="text" id="id_comment_div_' + comment.id + '">' + comment.text +
+        '<h3>' + comment.firstname + ' ' + comment.lastname + '</h3></div>'
+        result += comment_result
+    }
+
+    result += '</div><input type="text" name="new_comment" id="id_comment_input_text_' + post.id + '">' +
+    '<button id="id_comment_button_' + post.id + '" onclick="addComment(' + post.id + ')">Add Comment</button></div>'
+
+    return result
+}
+
 
 function convertUTCDateToLocalDate(date) {
     var newDate = new Date(date.getTime() - date.getTimezoneOffset()*60*1000);
@@ -457,6 +575,14 @@ function dateDiffFormatter(diff) {
     }
     return result
 }
+
+function commentFormatter(comment){
+    console.log(comment)
+    let result = '<div class="text" id="id_comment_div_' + comment.id + '">' + comment.text +
+    '<h3>' + comment.firstname + ' ' + comment.lastname + '</h3></div>'
+    return result
+}
+
 
 // ======================== HELPERS =========================
 function getCSRFToken() {
@@ -501,6 +627,20 @@ function highlightMenuItem(id) {
     currentActive[0].className = currentActive[0].className.replace(" active", "")
     document.getElementById(id).className += " active"
 
+}
+
+function displayComments(post_id) {
+    document.getElementById("comments_post_div_" + post_id).style.display = 'block';
+    // document.getElementById("comment_display_" + post_id).style.display = 'none';
+    document.getElementById("comment_display_" + post_id).innerHTML = "Fold comments.";
+    document.getElementById("comment_display_" + post_id).setAttribute('onclick', "foldComments(" + post_id + ")");
+}
+
+function foldComments(post_id) {
+    let commentCount = document.getElementById("comments_post_div_" + post_id).childElementCount
+    document.getElementById("comments_post_div_" + post_id).style.display = 'none';
+    document.getElementById("comment_display_" + post_id).innerHTML = "View all " + commentCount + " comments.";
+    document.getElementById("comment_display_" + post_id).setAttribute('onclick', "displayComments(" + post_id + ")");
 }
 
 
