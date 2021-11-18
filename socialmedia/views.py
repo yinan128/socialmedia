@@ -126,7 +126,6 @@ def get_posts(request):
 
 
 
-
 def addPost(request):
     context = {}
     if request.method == "GET":
@@ -144,6 +143,7 @@ def addPost(request):
     return redirect(reverse('global_stream'))
 
 
+# Set post visibility (post_id and visibility given in request)
 def set_post_visibility(request):
     print("inside set_post_visibility")
     for key,value in request.POST.items():
@@ -190,6 +190,8 @@ def set_post_visibility(request):
 
     return redirect(reverse('global_stream'))
 
+
+# Get post visibility (post_id given in request)
 def get_post_visibility(request): 
     post_id = request.POST['post_id']
 
@@ -218,6 +220,7 @@ def get_post_visibility(request):
     response['Access-Control-Allow-Origin'] = '*'
     return response
 
+# Get all groups in the database
 def get_groups(request):
     groups = Group.objects.all()
     response_data = []
@@ -249,6 +252,36 @@ def get_groups(request):
 
 
 
+# get all users list
+def users_list_action(request):
+    response_data = []
+    for user in User.objects.all():
+        user_info = {
+            'user_id': user.id, 
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+        }
+        response_data.append(user_info)
+    response_json = json.dumps(response_data)
+    response = HttpResponse(response_json, content_type='application/json')
+    response['Access-Control-Allow-Origin'] = '*'
+    return response
+
+def add_group_action(request):
+    # print("inside set_post_visibility")
+    # for key,value in request.POST.items():
+    #     print("{} {}".format(key,value))
+    group = Group(name=request.POST['group-name'])
+    group.save()
+    users = []
+    for key,value in request.POST.items():
+        if key.startswith("user_"):
+            print(value)
+            group.users.add(get_object_or_404(User, id=int(value)))
+            
+    group.save()
+
+    return redirect(reverse('global_stream'))
 
 
 def _my_json_error_response(message, status=200):

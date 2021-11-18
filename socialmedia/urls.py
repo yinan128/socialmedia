@@ -10,4 +10,6 @@ urlpatterns = [
     path('set-visibility', views.set_post_visibility, name="visibility"),
     path('get-groups', views.get_groups, name="getGroups"),
     path('get-visibility', views.get_post_visibility, name="get_visibility"),
+    path('users-list', views.users_list_action, name="usersList"),
+    path('add-group', views.add_group_action, name="addGroup"),
 ]

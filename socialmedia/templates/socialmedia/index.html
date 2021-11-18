@@ -169,7 +169,7 @@
                 </div>
 
                 <!------------------- Visibility Overlay --------------------->
-                <div id="visibility-overlay">
+                <div id="visibility-overlay" class="center-overlay">
                     <form id="visibility-form" method="POST" action="{% url 'visibility' %}">
                         Set Post Visibility:<br>
                         <input type="hidden" name="post_id" id="post_vis_id" value="0">
@@ -497,8 +497,31 @@
                     </div>
                     <!------------ MESSAGES CATEGORY -------------->
                     <div class="category">
-                        <h6 class="active">Following</h6>
-                        <h6>My Group</h6>
+                        <h6 id="following-tab" class="active">Following</h6>
+                        <h6 id="group-tab">My Group</h6>
+                    </div>
+                    <div id="group-content">
+                        <div class="message hide">
+                            <div class="profile-photo">
+                                <img src="./images/profile-2.jpg">
+                            </div>
+                            <div class="message-body">
+                                <h5>Group 1</h5>
+                                <p class="text-muted">UserQ: hi</p>
+                            </div>
+                        </div>
+                        <div id="add-group" class="hide">
+                            <label class="btn btn-primary" onclick="get_users_list()">Add Group</label>
+                        </div>
+                        <div id="add-group-overlay" class="center-overlay">
+                            <form id="add-group-form" method="POST" action="{% url 'addGroup' %}">
+                                <h3>Add Users to Group</h3>
+                                <input name='group-name' type="text" id="group-name" placeholder="Enter your group name here">
+                                <br>
+                                <div id="form-details"></div>
+                                {% csrf_token %}
+                            </form>
+                        </div>
                     </div>
                     <!------------ MESSAGE -------------->
                     <!----- MESSAGE ----->
@@ -698,9 +721,31 @@
         document.onclick = function(event) {
             var a = event.target;
             vis_div = document.getElementById("visibility-form")
-            if( !(a == vis_div || vis_div.contains(a))) {
+            grp_div = document.getElementById("add-group-form")
+            if( !(a == vis_div || vis_div.contains(a) || a == grp_div || grp_div.contains(a))) {
                 overlay_off();
             }
+        }
+
+        document.getElementById("group-tab").onclick = function(event) {
+            document.querySelector("#group-tab").classList.toggle("active")
+            document.querySelector("#following-tab").classList.toggle("active")
+            // document.querySelectorAll(".message").classList.toggle("message")
+            var msgList = document.querySelectorAll(".message")
+            for(var i=0; i<msgList.length; i++) {
+                msgList.item(i).classList.toggle("hide")
+            }
+            document.querySelector("#add-group").classList.toggle("hide")
+        }
+
+        document.getElementById("following-tab").onclick = function(event) {
+            document.querySelector("#group-tab").classList.toggle("active")
+            document.querySelector("#following-tab").classList.toggle("active")
+            var msgList = document.querySelectorAll(".message")
+            for(var i=0; i<msgList.length; i++) {
+                msgList.item(i).classList.toggle("hide")
+            }
+            document.querySelector("#add-group").classList.toggle("hide")
         }
     }
 

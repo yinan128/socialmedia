@@ -283,6 +283,9 @@ function updatePosts(response) {
     }
 }
 
+
+// ======================== Edit Dropdown Menu =========================
+
 function show_edit_dropdown() {
     var parent_div = this.parentElement
     parent_div.querySelector(".edit-dropdown-content").classList.toggle("show")
@@ -322,7 +325,7 @@ function edit_post_vis() {
     post_id = parseInt(document.getElementById("post_vis_id").value)
     console.log("post id is "+post_id)
     $.ajax({
-        url: "/socialmedia/set-visibility/",
+        url: "/socialmedia/set-visibility",
         datatype: "json",
         success: function() {
             overlay_off();
@@ -384,18 +387,79 @@ function overlay_on(post_id, response) {
         document.getElementById("group_vis").checked=true;
 
         update_groups_options(response);
-        // for(var i=1; i<response.length; i++) {
-        //     group_id = "select_group_"+response[i]['group_id']
-        //     console.log(document.getElementById(group_id))
-        //     document.getElementById(group_id).checked=true
-        // }
     }
 }
 
 function overlay_off() {
     document.getElementById("visibility-overlay").style.display = "none"
+    document.getElementById("add-group-overlay").style.display = "none"
 }
 
+
+// ======================== Group Tab =========================
+function get_users_list() {
+
+    $.ajax({
+        url: '/socialmedia/users-list',
+        datatype: 'json',
+        success: function(response){
+            add_users_list(response);
+        },
+        error: updateError,
+    })
+}
+
+function add_users_list(response) {
+    document.getElementById("add-group-overlay").style.display = "block"
+    console.log(response)
+    form = document.getElementById("form-details")
+    form.innerHTML = ""
+    for (var i=0; i<response.length; i++) {
+        var user = response[i]
+        console.log(user)
+        var user_check = document.createElement("input")
+        user_check.setAttribute("type", "checkbox")
+        user_check.setAttribute("id", "user_check_"+user['user_id'])
+        user_check.setAttribute("name", "user_"+user['user_id'])
+        user_check.setAttribute("value", user['user_id'])
+        var user_label = document.createElement("label")
+        user_label.setAttribute("for", "user_check_"+user['user_id'])
+        user_label.innerHTML = user['first_name'] + " " + user['last_name']
+        user_label.setAttribute("class", "user_checkbox")
+        var br_elem = document.createElement("br")
+        form.append(user_check)
+        form.append(user_label)
+        form.append(br_elem)
+    }
+    var confirm_btn = document.createElement("input")
+    confirm_btn.setAttribute("type", "submit")
+    confirm_btn.setAttribute("value", "Confirm")
+    confirm_btn.setAttribute("onsubmit", "add_group()")
+    confirm_btn.setAttribute("style", "width: 100%;padding: 5px;")
+    form.append(confirm_btn)
+
+}
+
+
+function add_group() {
+    $.ajax({
+        url: "/socialmedia/add-group",
+        datatype: "json",
+        success: function() {
+            overlay_off();
+            updatePosts();
+        },
+        error: function() {
+            overlay_off();
+            updateError();
+        },
+    })
+}
+
+
+function show_add_group_overlay() {
+    document.getElementById("add-group-overlay").style.display = "block"
+}
 
 
 // ======================== Text Formatter =========================
