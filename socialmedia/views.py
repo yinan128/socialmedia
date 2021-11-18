@@ -5,7 +5,9 @@ from django.urls import reverse
 from django.utils import timezone
 from socialmedia.models import *
 import json
+import geopy
 from geopy.geocoders import Nominatim
+from geopy.extra.rate_limiter import RateLimiter
 from mimetypes import guess_type
 from socialmedia.forms import *
 from newsapi import NewsApiClient
@@ -171,6 +173,39 @@ def local_stream(request):
 
 def login_action(request):
     return render(request, 'socialmedia/login.html')
+
+def get_users_stat(request):
+    print(SocialAccount.objects.filter(provider='github'))
+    github_users_count = SocialAccount.objects.filter(provider='github').count()
+    google_users_count = SocialAccount.objects.filter(provider='google').count()
+    users_dis = {
+        'github': github_users_count,
+        'google': google_users_count,
+    }
+    locator = Nominatim(user_agent="google")
+    coordinates = "53.480837, -2.244914"
+    location = locator.reverse(coordinates)
+    print(location.raw)
+    return users_dis
+
+def get_posts_stat():
+    posts = list(Post.objects.all())
+    # for post in posts: 
+    #     print(post)
+    # print(posts)
+
+def get_stat(request):
+    users_dis = get_users_stat(request)
+    user = Profile.objects.get(user=request.user)
+    posts_dis = get_posts_stat()
+    context = {
+        "users_dis": users_dis,
+        'first_name': user.first_name,
+        'last_name': user.last_name,
+        'username': request.user.username,
+        'picture': user.picture,
+    }
+    return render(request, 'socialmedia/stat.html', context=context)
 
 
 def post_action(request):
@@ -392,5 +427,4 @@ def getNewsFromCity(city):
 
     for article in all_articles['articles']:
         yield article['title'], article['source']['name'], article['publishedAt'], article['description'], article['url'], article['urlToImage']
-
 

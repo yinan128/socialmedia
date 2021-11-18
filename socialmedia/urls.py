@@ -10,6 +10,7 @@ urlpatterns = [
     path('get-posts', views.get_posts),
     path('get-postsNearby', views.get_nearbyPosts),
     path('get-local-news', views.get_news),
-    path('addPost', views.addPost, name='newPost')
+    path('addPost', views.addPost, name='newPost'),
+    path('stat', views.get_stat, name='stat')
 
 ]
