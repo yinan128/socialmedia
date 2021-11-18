@@ -17,6 +17,8 @@ const Bg1 = document.querySelector('.bg-1');
 const Bg2 = document.querySelector('.bg-2');
 const Bg3 = document.querySelector('.bg-3');
 
+// current location of the user.
+var currLocation;
 
 
 // ================ SIDEBAR ===============
@@ -220,26 +222,185 @@ Bg3.addEventListener('click', () => {
 })
 
 
+// ======================== Eve events =========================
+function onloadEvents() {
+    getPosts();
+    acquireCurrLocation();
+    var edit_btns = document.getElementsByClassName("uil-ellipsis-h")
+    for( var i=0; i<edit_btns.length; i++ ) {
+        edit_btns[i].addEventListener('click', show_edit_dropdown)
+    }
 
-// ======================== POST =========================
+    var edit_vis = document.getElementsByClassName("set-visib")
+    for( var i=0; i<edit_vis.length; i++ ) {
+        edit_vis[i].addEventListener('click', show_edit_visibility)
+    }
+    document.onclick = function(event) {
+        var a = event.target;
+        vis_div = document.getElementById("visibility-form")
+        grp_div = document.getElementById("add-group-form")
+        if( !(a == vis_div || vis_div.contains(a) || a == grp_div || grp_div.contains(a))) {
+            overlay_off();
+        }
+    }
 
-function postAction() {
-    getLocationThenPost()
+    document.getElementById("group-tab").onclick = function(event) {
+        document.querySelector("#group-tab").classList.toggle("active")
+        document.querySelector("#following-tab").classList.toggle("active")
+        // document.querySelectorAll(".message").classList.toggle("message")
+        var msgList = document.querySelectorAll(".message")
+        for(var i=0; i<msgList.length; i++) {
+            msgList.item(i).classList.toggle("hide")
+        }
+        document.querySelector("#add-group").classList.toggle("hide")
+    }
+
+    document.getElementById("following-tab").onclick = function(event) {
+        document.querySelector("#group-tab").classList.toggle("active")
+        document.querySelector("#following-tab").classList.toggle("active")
+        var msgList = document.querySelectorAll(".message")
+        for(var i=0; i<msgList.length; i++) {
+            msgList.item(i).classList.toggle("hide")
+        }
+        document.querySelector("#add-group").classList.toggle("hide")
+    }
 }
 
-function getLocationThenPost() {
+
+// ======================== acquire current location =========================
+function acquireCurrLocation() {
     if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(postAfterGeoAquired)
+        navigator.geolocation.getCurrentPosition(function(location){
+            currLocation = location;
+        })
     } else {
         console.log("Geolocation is not supported by this browser.");
     }
 }
 
 
-function postAfterGeoAquired(position) {
-    // let post_bar = document.getElementById("create-post")
-    // let post_text = post_bar.value
-    // post_bar.value = ""
+// ======================== SWITCH CHANNELS =========================
+function switchToLocalChannel() {
+    // change menu item ui color
+    highlightMenuItem("localChannel")
+    // delete all middle part.
+    document.getElementById("middlePart").innerHTML = '<div class="feeds" id="allNews"></div>'
+    $.ajax({
+        url: "/socialmedia/get-local-news",
+        type: "POST",
+        data: {
+            lat: currLocation.coords.latitude,
+            long: currLocation.coords.longitude,
+            csrfmiddlewaretoken: getCSRFToken()
+        },
+        success: updateNews,
+        error: updateError
+    })
+}
+
+
+function switchToGlobalChannel() {
+    // change menu item ui color
+    highlightMenuItem("globalChannel")
+    // delete all middle part.
+    if (document.getElementById("create-post") != null) return
+    document.getElementById("middlePart").innerHTML =
+        '<div class="create-post" id="create-post">' +
+        '<div id="editor"><script>let editor</script></div>' +
+        '<input type="submit" value="Post" class="btn btn-primary btn-floatright" onclick="postAction()">' +
+        '</div>' +
+        '<div class="feeds" id="allFeeds"></div>'
+
+
+    ClassicEditor
+        .create( document.querySelector( '#editor' ))
+        .then( newEditor => {
+            editor = newEditor;
+        } )
+        .catch( error => {
+            console.error( error );
+        } );
+
+
+    $.ajax({
+        url: "/socialmedia/get-posts",
+        type: "GET",
+        success: updatePosts,
+        error: updateError
+    })
+
+}
+
+function switchToMapit() {
+    // change menu item ui color
+    highlightMenuItem("mapitChannel")
+    // delete all middle part.
+    if (document.getElementById("mapitPlaceholder") != null) return
+    document.getElementById("middlePart").innerHTML =
+        '<div class="feeds" id="mapitPlaceholder" style="width:600px;height:450px;"></div>'
+
+    $.ajax({
+        url: "/socialmedia/get-postsNearby",
+        type: "POST",
+        data: {
+            lat: currLocation.coords.latitude,
+            long: currLocation.coords.longitude,
+            csrfmiddlewaretoken: getCSRFToken()
+        },
+        success: updateMap,
+        error: updateError
+    })
+}
+
+function updateMap(response) {
+    mapPlaceholder = document.getElementById('mapitPlaceholder');
+    var data = []
+
+    $(response).each(function() {
+        let start = luxon.DateTime.fromISO(this.created_time)
+        let end = luxon.DateTime.fromJSDate(new Date())
+        let diff = end.diff(start, ['days', 'hours', 'minutes']).toObject()
+
+        data.push({
+            type:'scattermapbox',
+            customdata: [[this.firstname + ' ' + this.lastname, dateDiffFormatter(diff)]],
+            hovertemplate: "<b>%{customdata[0]}</b><br><i>%{customdata[1]}</i><br>%{text}<extra></extra>",
+            lat:[this.latitude],
+            lon:[this.longitude],
+            mode:'markers',
+            marker: {
+            size:14
+            },
+            text:[this.text]
+        })
+    })
+
+    var layout = {
+      autosize: true,
+      hovermode:'closest',
+      showlegend:false,
+      mapbox: {
+          bearing:0,
+          center: {
+          lat:currLocation.coords.latitude,
+          lon:currLocation.coords.longitude
+        },
+        pitch:0,
+        zoom:13
+      },
+    }
+
+    Plotly.setPlotConfig({
+      mapboxAccessToken: "pk.eyJ1IjoieWluYW4xMjgiLCJhIjoiY2t2eTI4b2s3NzM4cTJ1czFmN2Z2NXVlbSJ9.1MRpWhMX4OdTDWNqNoGaaw"
+    })
+
+    Plotly.newPlot(mapPlaceholder, data, layout)
+
+}
+
+// ======================== POST =========================
+
+function postAction() {
     post_body = editor.getData()
     editor.setData('')
 
@@ -248,8 +409,8 @@ function postAfterGeoAquired(position) {
         type: "POST",
         data: {
             text: post_body,
-            lat: position.coords.latitude,
-            long: position.coords.longitude,
+            lat: currLocation.coords.latitude,
+            long: currLocation.coords.longitude,
             visibility: 'Public',
             csrfmiddlewaretoken: getCSRFToken()
         },
@@ -257,6 +418,7 @@ function postAfterGeoAquired(position) {
         error: updateError
     })
 }
+
 
 function updatePosts(response) {
     // todo: clean deleted posts.
@@ -390,6 +552,7 @@ function overlay_on(post_id, response) {
     }
 }
 
+
 function overlay_off() {
     document.getElementById("visibility-overlay").style.display = "none"
     document.getElementById("add-group-overlay").style.display = "none"
@@ -461,14 +624,31 @@ function show_add_group_overlay() {
     document.getElementById("add-group-overlay").style.display = "block"
 }
 
+function updateNews(response) {
+    $(response).each(function() {
+        $("#allNews").append(newsFormatter(this))
+    })
+}
+
+
+
 
 // ======================== Text Formatter =========================
 function postFormatter(response) {
-    console.log(response['mine'])
-    result = '<div class="feed"><div class="head"><div class="user"><div class="profile-photo">'
+    let start = luxon.DateTime.fromJSDate(new Date(response.created_time))
+    let end = luxon.DateTime.fromJSDate(new Date())
+    let diff = end.diff(start, ['days', 'hours', 'minutes']).toObject()
+
+    // let result = '<div class="feed"><div class="head"><div class="user"><div class="profile-photo">'
+    //     + '<img src="./images/profile-' + response.user + '.jpg"></div><div class="ingo">'
+    //     + '<h3>' + response.firstname + ' ' + response.lastname + '</h3>'
+    //     + '<small>' + response.city + ', ' + dateDiffFormatter(diff) + '</small>'
+    //     + '</div></div><span class="edit"><i class="uil uil-ellipsis-h"></i></span></div>'
+
+    let result = '<div class="feed"><div class="head"><div class="user"><div class="profile-photo">'
         + '<img src="./images/profile-' + response.user + '.jpg"></div><div class="ingo">'
         + '<h3>' + response.firstname + ' ' + response.lastname + '</h3>'
-        + '<small>' + response.city + ', 15 MINUTES AGO</small>'
+        + '<small>' + response.city + ', ' + dateDiffFormatter(diff) + '</small>'
         + '</div></div><div class="edit">'
 
     // Only show ellipsis button if it's mine post
@@ -484,6 +664,43 @@ function postFormatter(response) {
         + '<div class="comments text-muted">View all 277 comments</div></div>'
     
 
+    return result
+}
+
+function convertUTCDateToLocalDate(date) {
+    var newDate = new Date(date.getTime() - date.getTimezoneOffset()*60*1000);
+    return newDate;
+}
+
+function newsFormatter(news) {
+    let start = luxon.DateTime.fromJSDate(new Date(news.publish))
+    let end = luxon.DateTime.fromJSDate(new Date())
+    let diff = end.diff(start, ['days', 'hours', 'minutes']).toObject()
+
+    let result = '<div class="feed">' +
+        '<div class="head">' +
+        '<div class="ingo">' +
+        '<a href="' + news.url + '"><h3>' +news.title + '</h3></a>' +
+        '<small>'+ news.author + ', ' + dateDiffFormatter(diff) +'</small>' +
+        '</div>' +
+        '</div>' +
+        '<div><img src="' + news.imageUrl + '"></div>'
+    return result
+}
+
+function dateDiffFormatter(diff) {
+    let result = ""
+    if (diff.days != 0) {
+        result += diff.days + " days "
+    }
+    if (diff.hours != 0) {
+        result += diff.hours + " hours "
+    }
+    if (Math.round(diff.minutes) == 1) {
+        result += Math.round(diff.minutes) + " minute ago"
+    } else {
+        result += Math.round(diff.minutes) + " minutes ago"
+    }
     return result
 }
 
@@ -523,6 +740,15 @@ function updateError(xhr) {
 function displayError(message) {
     $("#error").html(message);
 }
+
+function highlightMenuItem(id) {
+    // change the color of the channel.
+    let currentActive = document.getElementsByClassName("menu-item active")
+    currentActive[0].className = currentActive[0].className.replace(" active", "")
+    document.getElementById(id).className += " active"
+
+}
+
 
 // get posts
 function getPosts() {

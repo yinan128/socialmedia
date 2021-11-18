@@ -38,10 +38,14 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.sites',
+
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
+
     'allauth.socialaccount.providers.google',
+    "allauth.socialaccount.providers.github",
+
     'social_django',
     'socialmedia',
     'ckeditor',
@@ -59,15 +63,21 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'webapps.urls'
 
-SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = '627231911162-nf8lo6lgg5fec27ogka272i0j2ld2ofn.apps.googleusercontent.com'
-SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = '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'
-SOCIAL_AUTH_GOOGLE_OAUTH2_AUTH_EXTRA_ARGUMENTS = {'prompt': 'select_account'}
+
+# SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = '1011702883228-f4q0o9ur66ndpb2gh8fb8sm8npduagu3.apps.googleusercontent.com'
+# SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = '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'
+# SOCIAL_AUTH_GOOGLE_OAUTH2_AUTH_EXTRA_ARGUMENTS = {'prompt': 'select_account'}
+
 
 # Used by the @login_required decorator to redirect to the login action
-LOGIN_URL = '/oauth/login/google-oauth2/'
+# LOGIN_URL = '/oauth/login/google-oauth2/'
+
+LOGIN_URL = '/login'
 
 # Default URL to redirect to after a user logs in.
-LOGIN_REDIRECT_URL = '/'
+ACCOUNT_EMAIL_VERIFICATION = "none"
+LOGIN_REDIRECT_URL = '/login'
+ACCOUNT_LOGOUT_ON_GET = True
 
 TEMPLATES = [
     {
@@ -84,6 +94,7 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
             ],
         },
+        'DIRS': [str(BASE_DIR.joinpath("templates"))],
     },
 ]
 
@@ -146,9 +157,9 @@ STATIC_URL = '/static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTHENTICATION_BACKENDS = (
-    'social_core.backends.google.GoogleOAuth2',
-    'django.contrib.auth.backends.ModelBackend',
-    # 'socialmedia.views.update_user_social_data',
+    'allauth.account.auth_backends.AuthenticationBackend',
+    # 'social_core.backends.google.GoogleOAuth2',
+    # 'django.contrib.auth.backends.ModelBackend',
 )
 
 SITE_ID = 1
