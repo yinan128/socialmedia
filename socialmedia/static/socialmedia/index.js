@@ -375,6 +375,173 @@ function updateLocalPosts(response) {
     })
 }
 
+function switchToStat() {
+    highlightMenuItem("statistics")
+    if (currPage == "statistics") return
+    currPage = "statistics"
+
+    document.getElementById("middlePart").innerHTML =
+        '<div class="stat">'
+        + '<h3>SocialMedia GitHub Registerred vs. Google Registerred</h3>'
+        + '<div id="container" style="width: 600px; height: 400px"></div>'
+        + '<h3>8 Places where most of the posts come from</h3>'
+        + '<div id="container2" style="width: 600px; height: 400px"></div>'
+        + '<h3>Number of new posts published every day</h3>'
+        + '<div id="container3" style="width: 600px; height: 400px"></div>'
+        + '</div>'
+      
+    $.ajax({
+        url: "/socialmedia/stat",
+        type: "GET",
+        success: updateData,
+        error: updateError
+    })
+}
+
+function updateData(response) {
+    updatefig1(response);
+    updatefig2(response);
+    updatefig3(response);
+}
+
+function updatefig1(response) {
+    var dom = document.getElementById("container");
+    var myChart = echarts.init(dom);
+    var app = {};
+
+    var option;
+
+    console.log(response)
+
+    var github_cnt = response.users_dis.github;
+    var google_cnt = response.users_dis.google;
+
+    option = {
+      tooltip: {
+        trigger: 'item'
+      },
+      legend: {
+        top: '5%',
+        left: 'center'
+      },
+      series: [
+        {
+          name: 'Access From',
+          type: 'pie',
+          radius: ['40%', '70%'],
+          avoidLabelOverlap: false,
+          itemStyle: {
+            borderRadius: 10,
+            borderColor: '#fff',
+            borderWidth: 2
+          },
+          label: {
+            show: false,
+            position: 'center'
+          },
+          emphasis: {
+            label: {
+              show: false,
+              fontSize: '18',
+              fontWeight: 'bold'
+            }
+          },
+          labelLine: {
+            show: false
+          },
+          data: [
+            { value: github_cnt, name: 'GitHub' },
+            { value: google_cnt, name: 'Google' },
+          ]
+        }
+      ]
+    };
+
+    if (option && typeof option === 'object') {
+        myChart.setOption(option);
+    }
+}
+
+function updatefig2(response) {
+    var dom = document.getElementById("container2");
+    var myChart = echarts.init(dom);
+    var app = {};
+
+    var option;
+
+    var data = response.posts_dis;
+    data = JSON.parse(data.replace(/&quot;/g,'"'));
+    console.log(data)
+
+    option = {
+      tooltip: {
+        trigger: 'item'
+      },
+      legend: {
+        top: '5%',
+        left: 'center'
+      },
+      series: [
+        {
+          name: 'Access From',
+          type: 'pie',
+          radius: ['40%', '70%'],
+          avoidLabelOverlap: false,
+          itemStyle: {
+            borderRadius: 10,
+            borderColor: '#fff',
+            borderWidth: 2
+          },
+          label: {
+            show: false,
+            position: 'center'
+          },
+          emphasis: {
+            label: {
+              show: false,
+              fontSize: '18',
+              fontWeight: 'bold'
+            }
+          },
+          labelLine: {
+            show: false
+          },
+          data: data
+        }
+      ]
+    };
+
+    if (option && typeof option === 'object') {
+        myChart.setOption(option);
+    }
+}
+
+function updatefig3(response) {
+    var chartDom = document.getElementById('container3');
+    var myChart = echarts.init(chartDom);
+    var app={}
+    var option;
+
+    var date = response.date;
+    var num = response.num;
+    option = {
+      xAxis: {
+        type: 'category',
+        data: date
+      },
+      yAxis: {
+        type: 'value'
+      },
+      series: [
+        {
+          data: num,
+          type: 'line'
+        }
+      ]
+    };
+
+    option && myChart.setOption(option);
+}
 
 function switchToMapit() {
     // change menu item ui color
