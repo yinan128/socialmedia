@@ -338,6 +338,11 @@ main .container .left .profile {
   background: url("./images/story-6.jpg") no-repeat center center/cover;
 }
 
+.middle .stat {
+  background: var(--color-white);
+  background-color: white;
+}
+
 .middle .story .profile-photo {
   width: 2rem;
   height: 2rem;
