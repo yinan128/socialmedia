@@ -6,6 +6,7 @@ from django.utils import timezone
 from socialmedia.models import *
 from socialmedia.forms import *
 from geopy.geocoders import Nominatim
+from geopy.point import Point
 from newsapi import NewsApiClient
 from allauth.socialaccount.models import SocialAccount
 
@@ -74,6 +75,73 @@ def global_stream(request):
 
 def login_action(request):
     return render(request, 'socialmedia/login.html')
+
+
+def get_users_stat(request):
+    print(SocialAccount.objects.filter(provider='github'))
+    github_users_count = SocialAccount.objects.filter(provider='github').count()
+    google_users_count = SocialAccount.objects.filter(provider='google').count()
+    users_dis = {
+        'github': github_users_count,
+        'google': google_users_count,
+    }
+    return users_dis
+
+def get_posts_stat():
+    posts = list(Post.objects.all())
+    posts_stat = {}
+    posts_date = {}
+    for post in posts:
+        locator = Nominatim(user_agent="google")
+        location = locator.reverse(Point(post.latitude, post.longitude))
+        address = location.raw["address"]
+        combined_addr = f"{address['road']}, {address['neighbourhood']}, {address['city']}"
+        print(combined_addr)
+        if combined_addr in posts_stat:
+            posts_stat[combined_addr] += 1
+        else:
+            posts_stat[combined_addr] = 1
+
+        time = post.time.date()
+        if time in posts_date:
+            posts_date[time] += 1
+        else:
+            posts_date[time] = 1
+        
+    posts_stat = {k: v for k, v in sorted(posts_stat.items(), key=lambda item: item[1], reverse=True)}
+    return posts_stat, posts_date
+
+def get_stat(request):
+    users_dis = get_users_stat(request)
+    user = Profile.objects.get(user=request.user)
+    posts_stat, posts_date = get_posts_stat()
+    posts_dis = []
+    for key, value in posts_stat.items():
+        posts_dis.append({'value': value, 'name': key})
+        if len(posts_dis) >= 8:
+            break
+    date = []
+    num = []
+    for key, value in posts_date.items():
+        tmp = str(key).split('-')
+        date.append(int(''.join(tmp)))
+        num.append(value)
+        if len(date) >= 8:
+            break
+    context = {
+        "users_dis": users_dis,
+        "posts_dis": json.dumps(posts_dis),
+        "date": date,
+        "num": num,
+        'first_name': user.first_name,
+        'last_name': user.last_name,
+        'username': request.user.username,
+        'picture': user.picture,
+    }
+    response_json = json.dumps(context)
+    response = HttpResponse(response_json, content_type='application/json')
+    response['Access-Control-Allow-Origin'] = '*'
+    return response
 
 
 def post_action(request):
