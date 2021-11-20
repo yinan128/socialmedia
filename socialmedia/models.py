@@ -4,12 +4,19 @@ from django.contrib.auth.models import User
 from django.db.models.fields import CharField
 from ckeditor.fields import RichTextField
 
+
 # Create your models here.
 class Comment(models.Model):
     user = models.ForeignKey(User, default=None, on_delete=models.PROTECT)
     text = models.CharField(max_length=200)
     # parent_post = models.ForeignKey(Post)
     time = models.DateTimeField()
+
+
+
+class Group(models.Model):
+    name = models.CharField(max_length=40)
+    users = models.ManyToManyField(User, related_name="users")
 
 
 # geo ref: https://stackoverflow.com/questions/50626626/how-to-save-html5-geolocation-data-to-python-django-admin
@@ -24,11 +31,9 @@ class Post(models.Model):
     longitude = models.FloatField(default=0.0)
     city = models.CharField(max_length=50)
     body = RichTextField(blank=True, null=True)
+    visibility = models.CharField(max_length=10)
+    hide_groups = models.ManyToManyField(Group, default=None)
 
-
-class Group(models.Model):
-    name: models.CharField(max_length=40)
-    users: models.ManyToManyField(User)
 
 class Profile(models.Model):
     user = models.ForeignKey(User, default=None, on_delete=models.PROTECT)
@@ -38,3 +43,4 @@ class Profile(models.Model):
     # blacklist = models.ManyToManyField(User)
     # following = models.ManyToManyField(User)
     groups = models.ManyToManyField(Group)
+

@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-2@+nb@sur#!3vp^zo8ynd26&6ca)2=1tzivx1!m8_pez!#i@q0
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["0.0.0.0", "localhost", "127.0.0.1"]
 
 
 # Application definition
@@ -63,9 +63,11 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'webapps.urls'
 
+
 # SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = '1011702883228-f4q0o9ur66ndpb2gh8fb8sm8npduagu3.apps.googleusercontent.com'
 # SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = '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'
 # SOCIAL_AUTH_GOOGLE_OAUTH2_AUTH_EXTRA_ARGUMENTS = {'prompt': 'select_account'}
+
 
 # Used by the @login_required decorator to redirect to the login action
 # LOGIN_URL = '/oauth/login/google-oauth2/'

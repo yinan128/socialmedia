@@ -223,10 +223,48 @@ Bg3.addEventListener('click', () => {
 })
 
 
-// ======================== onload events =========================
+// ======================== Eve events =========================
 function onloadEvents() {
     getPosts();
     acquireCurrLocation();
+    var edit_btns = document.getElementsByClassName("uil-ellipsis-h")
+    for( var i=0; i<edit_btns.length; i++ ) {
+        edit_btns[i].addEventListener('click', show_edit_dropdown)
+    }
+
+    var edit_vis = document.getElementsByClassName("set-visib")
+    for( var i=0; i<edit_vis.length; i++ ) {
+        edit_vis[i].addEventListener('click', show_edit_visibility)
+    }
+    document.onclick = function(event) {
+        var a = event.target;
+        vis_div = document.getElementById("visibility-form")
+        grp_div = document.getElementById("add-group-form")
+        if( !(a == vis_div || vis_div.contains(a) || a == grp_div || grp_div.contains(a))) {
+            overlay_off();
+        }
+    }
+
+    document.getElementById("group-tab").onclick = function(event) {
+        document.querySelector("#group-tab").classList.toggle("active")
+        document.querySelector("#following-tab").classList.toggle("active")
+        // document.querySelectorAll(".message").classList.toggle("message")
+        var msgList = document.querySelectorAll(".message")
+        for(var i=0; i<msgList.length; i++) {
+            msgList.item(i).classList.toggle("hide")
+        }
+        document.querySelector("#add-group").classList.toggle("hide")
+    }
+
+    document.getElementById("following-tab").onclick = function(event) {
+        document.querySelector("#group-tab").classList.toggle("active")
+        document.querySelector("#following-tab").classList.toggle("active")
+        var msgList = document.querySelectorAll(".message")
+        for(var i=0; i<msgList.length; i++) {
+            msgList.item(i).classList.toggle("hide")
+        }
+        document.querySelector("#add-group").classList.toggle("hide")
+    }
 }
 
 
@@ -316,6 +354,17 @@ function updatePosts(response) {
             $("#allFeeds").prepend(postFormatter(this))
         }
     })
+
+    // update edit button with onclick function
+    var edit_btns = document.getElementsByClassName("uil-ellipsis-h")
+    for( var i=0; i<edit_btns.length; i++ ) {
+        edit_btns[i].addEventListener('click', show_edit_dropdown)
+    }
+
+    var edit_vis = document.getElementsByClassName("set-visib")
+    for( var i=0; i<edit_vis.length; i++ ) {
+        edit_vis[i].addEventListener('click', show_edit_visibility)
+    }
 }
 
 
@@ -624,6 +673,7 @@ function postAction() {
             text: post_body,
             lat: currLocation.coords.latitude,
             long: currLocation.coords.longitude,
+            visibility: 'Public',
             csrfmiddlewaretoken: getCSRFToken()
         },
         success: updatePosts,
@@ -651,7 +701,198 @@ function addComment(id) {
         success: updateLocalPosts,
         error: updateError
     })
+
+    // update edit button with onclick function
+    var edit_btns = document.getElementsByClassName("uil-ellipsis-h")
+    for( var i=0; i<edit_btns.length; i++ ) {
+        edit_btns[i].addEventListener('click', show_edit_dropdown)
+    }
+
+    var edit_vis = document.getElementsByClassName("set-visib")
+    for( var i=0; i<edit_vis.length; i++ ) {
+        edit_vis[i].addEventListener('click', show_edit_visibility)
+    }
 }
+
+
+// ======================== Edit Dropdown Menu =========================
+
+function show_edit_dropdown() {
+    var parent_div = this.parentElement
+    parent_div.querySelector(".edit-dropdown-content").classList.toggle("show")
+}
+
+function show_edit_visibility() {
+    var feed_div = $(this).parentsUntil(".feeds", ".feed")[0]
+    var text_div = feed_div.getElementsByClassName("text")[0]
+    var post_id = text_div.id.split("_").at(-1)
+    post_id = parseInt(post_id)
+    $.ajax({
+        url: '/socialmedia/get-visibility',
+        method: 'POST',
+        data: {
+            'post_id': post_id,
+            csrfmiddlewaretoken: getCSRFToken(),
+        },
+        success: function(response) {
+            overlay_on(post_id, response);
+        },
+        error: updateError,
+    })
+}
+
+function update_groups_options(groups) {
+    $.ajax({
+        url: "/socialmedia/get-groups",
+        datatype: "json",
+        success: function(response) {
+            update_vis_form(response, groups);
+        },
+        error: updateError
+    })
+}
+
+function edit_post_vis() {
+    post_id = parseInt(document.getElementById("post_vis_id").value)
+    console.log("post id is "+post_id)
+    $.ajax({
+        url: "/socialmedia/set-visibility",
+        datatype: "json",
+        success: function() {
+            overlay_off();
+            updatePosts();
+        },
+        error: function() {
+            overlay_off();
+            updateError();
+        },
+    })
+}
+
+function remove_groups_options() {
+    document.getElementById("select-groups").innerHTML = ""
+}
+
+function update_vis_form(response, groups) {
+    var check_div = document.getElementById("select-groups")
+    var innerHtml = ""
+    hide_group_ids = []
+    if(groups != null) {
+        for(var j=1; j<groups.length; j++) {
+            hide_group_ids.push(groups[j]['group_id'])
+        }
+    }
+    console.log(hide_group_ids)
+    for(var i=0; i<response.length; i++) {
+        gid = response[i]['group_id']
+        gname = response[i]['group_name']
+        if(hide_group_ids.includes(gid)) {
+            innerHtml += '<input type="checkbox" id="select_group_'+ gid 
+                      + '" name="group_' + i + '" value="' + gid + '" checked>'
+                      + '<label for="select_group_' + gid + '"> '+ gname 
+                      + '</label><br>'
+        }
+        else {
+            innerHtml += '<input type="checkbox" id="select_group_'+ gid 
+                      + '" name="group_' + i + '" value="' + gid + '">'
+                      + '<label for="select_group_' + gid + '"> '+ gname 
+                      + '</label><br>'
+        }
+    }
+    check_div.innerHTML = innerHtml
+}
+
+
+function overlay_on(post_id, response) {
+    document.getElementById("visibility-overlay").style.display = "block"
+    document.getElementById("post_vis_id").value=post_id
+    console.log(response)
+    if(response[0]['visibility'] == "Private") {
+        document.getElementById("public_vis").checked=false;
+        document.getElementById("group_vis").checked=false;
+        document.getElementById("private_vis").checked=true;
+    }
+    if(response[0]['visibility'] == "Group") {
+        document.getElementById("public_vis").checked=false;
+        document.getElementById("private_vis").checked=false;
+        document.getElementById("group_vis").checked=true;
+
+        update_groups_options(response);
+    }
+}
+
+
+function overlay_off() {
+    document.getElementById("visibility-overlay").style.display = "none"
+    document.getElementById("add-group-overlay").style.display = "none"
+}
+
+
+// ======================== Group Tab =========================
+function get_users_list() {
+
+    $.ajax({
+        url: '/socialmedia/users-list',
+        datatype: 'json',
+        success: function(response){
+            add_users_list(response);
+        },
+        error: updateError,
+    })
+}
+
+function add_users_list(response) {
+    document.getElementById("add-group-overlay").style.display = "block"
+    console.log(response)
+    form = document.getElementById("form-details")
+    form.innerHTML = ""
+    for (var i=0; i<response.length; i++) {
+        var user = response[i]
+        console.log(user)
+        var user_check = document.createElement("input")
+        user_check.setAttribute("type", "checkbox")
+        user_check.setAttribute("id", "user_check_"+user['user_id'])
+        user_check.setAttribute("name", "user_"+user['user_id'])
+        user_check.setAttribute("value", user['user_id'])
+        var user_label = document.createElement("label")
+        user_label.setAttribute("for", "user_check_"+user['user_id'])
+        user_label.innerHTML = user['first_name'] + " " + user['last_name']
+        user_label.setAttribute("class", "user_checkbox")
+        var br_elem = document.createElement("br")
+        form.append(user_check)
+        form.append(user_label)
+        form.append(br_elem)
+    }
+    var confirm_btn = document.createElement("input")
+    confirm_btn.setAttribute("type", "submit")
+    confirm_btn.setAttribute("value", "Confirm")
+    confirm_btn.setAttribute("onsubmit", "add_group()")
+    confirm_btn.setAttribute("style", "width: 100%;padding: 5px;")
+    form.append(confirm_btn)
+
+}
+
+
+function add_group() {
+    $.ajax({
+        url: "/socialmedia/add-group",
+        datatype: "json",
+        success: function() {
+            overlay_off();
+            updatePosts();
+        },
+        error: function() {
+            overlay_off();
+            updateError();
+        },
+    })
+}
+
+
+function show_add_group_overlay() {
+    document.getElementById("add-group-overlay").style.display = "block"
+}
+
 
 
 
@@ -662,15 +903,31 @@ function postFormatter(response) {
     let end = luxon.DateTime.fromJSDate(new Date())
     let diff = end.diff(start, ['days', 'hours', 'minutes']).toObject()
 
+    // let result = '<div class="feed"><div class="head"><div class="user"><div class="profile-photo">'
+    //     + '<img src="./images/profile-' + response.user + '.jpg"></div><div class="ingo">'
+    //     + '<h3>' + response.firstname + ' ' + response.lastname + '</h3>'
+    //     + '<small>' + response.city + ', ' + dateDiffFormatter(diff) + '</small>'
+    //     + '</div></div><span class="edit"><i class="uil uil-ellipsis-h"></i></span></div>'
+
     let result = '<div class="feed"><div class="head"><div class="user"><div class="profile-photo">'
         + '<img src="./images/profile-' + response.user + '.jpg"></div><div class="ingo">'
         + '<h3>' + response.firstname + ' ' + response.lastname + '</h3>'
         + '<small>' + response.city + ', ' + dateDiffFormatter(diff) + '</small>'
-        + '</div></div><span class="edit"><i class="uil uil-ellipsis-h"></i></span></div>'
+        + '</div></div><div class="edit">'
+
+    // Only show ellipsis button if it's mine post
+    if(response['mine'] == true) {
+        result += '<button class="uil uil-ellipsis-h"></button>'
+    }
+
+    result += '<div class="edit-dropdown-content"> <a class="edit-post">Edit</a> '
+        + '<a class="set-visib">Visibility</a></div> </div></div>'
         + '<div class="text" id="id_post_div_' + response.id + '">' + response.text + '</div>'
         + '<div class="action-buttons"><div class="interaction-buttons"><span><i class="uil uil-heart"></i></span><span><i class="uil uil-comment-dots"></i></span><span><i class="uil uil-share-alt"></i></span></div><div class="bookmark"><span><i class="uil uil-bookmark-full"></i></span></div></div>'
         + '<div class="liked-by"><span><img src="./images/profile-10.jpg"></span><span><img src="./images/profile-4.jpg"></span><span><img src="./images/profile-15.jpg"></span><p>Liked by <b>UserC</b> and <b>4 others</b></p></div>'
         + '<div class="comments text-muted">View all 277 comments</div></div>'
+    
+
     return result
 }
 
