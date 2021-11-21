@@ -948,7 +948,13 @@ function show_add_group_overlay() {
 }
 
 function update_group_list(response) {
-    console.log(response)
+    // document.getElementById("group-content").innerHTML = ""
+    // console.log(response)
+    let clear = document.getElementById("group-content").getElementsByClassName("message")
+    $(clear).each(function() {
+        this.remove()
+    })
+    
     $(response).each(function() {
         console.log(this)
         let msg_div = document.createElement("div")
