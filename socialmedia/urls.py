@@ -9,10 +9,12 @@ urlpatterns = [
 
     path('set-visibility', views.set_post_visibility, name="visibility"),
     path('get-groups', views.get_groups, name="getGroups"),
+    path('get-group', views.get_group, name="getGroup"),
     path('get-visibility', views.get_post_visibility, name="get_visibility"),
     path('users-list', views.users_list_action, name="usersList"),
     path('add-group', views.add_group_action, name="addGroup"),
     path('delete-post', views.delete_post_action, name="deletePost"),
+    path('edit-group', views.edit_group_action, name="editGroup"),
 
     path('get-postsNearby', views.get_nearbyPosts),
     path('get-local-news', views.get_news),

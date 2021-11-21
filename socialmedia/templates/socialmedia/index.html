@@ -180,7 +180,7 @@
 
                 <!------------------- Visibility Overlay --------------------->
                 <div id="visibility-overlay" class="center-overlay">
-                    <form id="visibility-form" method="POST" action="{% url 'visibility' %}">
+                    <form id="visibility-form" method="POST" class="overlay-form" action="{% url 'visibility' %}">
                         Set Post Visibility:<br>
                         <input type="hidden" name="post_id" id="post_vis_id" value="0">
 
@@ -312,20 +312,28 @@
                                 <img src="./images/profile-2.jpg">
                             </div>
                             <div class="message-body">
-                                <h5>Group 1</h5>
+                                <h5>Group Dummy</h5>
                                 <p class="text-muted">UserQ: hi</p>
+                            </div>
+                            <div class="group-edit-div">
+                                <button class="group-edit-btn">Edit</button> 
                             </div>
                         </div>
                         <div id="add-group" class="hide">
                             <label class="btn btn-primary" onclick="get_users_list()">Add Group</label>
                         </div>
                         <div id="add-group-overlay" class="center-overlay">
-                            <form id="add-group-form" method="POST" action="{% url 'addGroup' %}">
+                            <form id="add-group-form" method="POST" class="overlay-form" action="{% url 'addGroup' %}">
                                 <h3>Add Users to Group</h3>
                                 <input name='group-name' type="text" id="group-name" placeholder="Enter your group name here">
                                 <br>
                                 <div id="form-details"></div>
                                 {% csrf_token %}
+                            </form>
+                        </div>
+                        <div id="edit-group-overlay" class="center-overlay">
+                            <form id="edit-group-form" class="overlay-form" method="POST" action="{% url 'editGroup' %}">
+                                
                             </form>
                         </div>
                     </div>

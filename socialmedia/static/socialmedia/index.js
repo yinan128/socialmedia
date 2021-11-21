@@ -247,7 +247,10 @@ function onloadEvents() {
         var a = event.target;
         vis_div = document.getElementById("visibility-form")
         grp_div = document.getElementById("add-group-form")
-        if( !(a == vis_div || vis_div.contains(a) || a == grp_div || grp_div.contains(a))) {
+        grp_edit_div = document.getElementById("edit-group-form")
+        if( !(a == vis_div || vis_div.contains(a) || 
+            a == grp_div || grp_div.contains(a) ||
+            a == grp_edit_div || grp_edit_div.contains(a))) {
             overlay_off();
         }
     }
@@ -255,12 +258,21 @@ function onloadEvents() {
     document.getElementById("group-tab").onclick = function(event) {
         document.querySelector("#group-tab").classList.toggle("active")
         document.querySelector("#following-tab").classList.toggle("active")
-        // document.querySelectorAll(".message").classList.toggle("message")
         var msgList = document.querySelectorAll(".message")
         for(var i=0; i<msgList.length; i++) {
             msgList.item(i).classList.toggle("hide")
         }
         document.querySelector("#add-group").classList.toggle("hide")
+        update_group_list()
+        $.ajax({
+            url: "/socialmedia/get-groups",
+            datatype: "json",
+            success: function(response) {
+                update_group_list(response);
+            },
+            error: updateError
+        })
+
     }
 
     document.getElementById("following-tab").onclick = function(event) {
@@ -869,8 +881,12 @@ function overlay_on(post_id, response) {
 
 
 function overlay_off() {
-    document.getElementById("visibility-overlay").style.display = "none"
-    document.getElementById("add-group-overlay").style.display = "none"
+    $(".center-overlay").each(function() {
+        this.style.display="none"
+    })
+    // document.getElementById("visibility-overlay").style.display = "none"
+    // document.getElementById("add-group-overlay").style.display = "none"
+    // document.getElementById("edit-group-overlay").style.display = "none"
 }
 
 
@@ -939,21 +955,130 @@ function show_add_group_overlay() {
     document.getElementById("add-group-overlay").style.display = "block"
 }
 
+function update_group_list(response) {
+    console.log(response)
+    $(response).each(function() {
+        console.log(this)
+        let msg_div = document.createElement("div")
+        msg_div.setAttribute("class", "message")
+        msg_div.setAttribute("id", "group_msg_"+this['group_id'])
 
+        let pic_div = document.createElement("div")
+        pic_div.setAttribute("class", "profile-photo")
+        pic_div.innerHTML='<img src="./images/profile-2.jpg">'
+        msg_div.appendChild(pic_div)
 
+        let body_div = document.createElement("div")
+        body_div.setAttribute("class", "message-body")
+        body_div.innerHTML='<h5>' + this['group_name'] + '</h5><p class="text-muted">UserQ: hi</p>'
+        msg_div.appendChild(body_div)
 
+        let edit_div = document.createElement("div")
+        edit_div.setAttribute("class", "group-edit-div")
+        edit_div.innerHTML='<button class="group-edit-btn" onclick="get_edit_group_info(event)">Edit</button>'
+        msg_div.appendChild(edit_div)
+
+        $("#group-content").prepend(msg_div)
+    })
+
+}
+
+function get_edit_group_info(event) {
+    console.log(event.target)
+    msg_div = $(event.target).parentsUntil("#group-content", ".message")[0]
+    group_id = msg_div.id.split("_")[2]
+    console.log(group_id)
+    $.ajax({
+        url: "/socialmedia/get-group",
+        datatype: "json",
+        method: 'POST',
+        data: {
+            group_id: group_id,
+            csrfmiddlewaretoken: getCSRFToken(),
+        },
+        success: show_group_edit_form,
+        error: updateError
+    })
+}
+
+function show_group_edit_form(response) {
+    document.getElementById("edit-group-overlay").style.display = "block"
+    edit_form = document.getElementById("edit-group-form")
+    edit_form.innerHTML = ""
+    group_users = []
+    $(response).each(function() {
+        // console.log(this)
+        let hid_group_id = document.createElement("input")
+        hid_group_id.setAttribute("type", "hidden")
+        hid_group_id.setAttribute("name", "group_id")
+        hid_group_id.setAttribute("value", this['group_id'])
+        edit_form.appendChild(hid_group_id)
+
+        let csrf = document.createElement("input")
+        csrf.setAttribute("type", "hidden")
+        csrf.setAttribute("name", "csrfmiddlewaretoken")
+        csrf.setAttribute("value", getCSRFToken())
+        edit_form.appendChild(csrf)
+
+        let form_head = document.createElement("h3")
+        form_head.innerHTML = "Edit Group " + this['group_name']
+        edit_form.appendChild(form_head)
+
+        $(this['group_users']).each(function() {
+            group_users.push(parseInt(this['user_id']))
+        })
+
+        // console.log(group_users)
+        $.ajax({
+            url: '/socialmedia/users-list',
+            datatype: 'json',
+            success: function(response){
+                $(response).each(function () {
+                    let user_id = "user_ckbx_"+this['user_id']
+                    let ckbx = document.createElement("input")
+                    ckbx.setAttribute("type", "checkbox")
+                    ckbx.setAttribute("id", user_id)
+                    ckbx.setAttribute("name", user_id)
+                    ckbx.setAttribute("value", this['user_id'])
+                    if(group_users.includes(parseInt(this['user_id']))) {
+                        ckbx.setAttribute("checked", true)
+                    }
+                    let label = document.createElement("label")
+                    label.setAttribute("for", user_id)
+                    label.setAttribute("class", "user_checkbox")
+                    label.innerHTML = this['first_name'] + " " + this['last_name']
+                    edit_form.appendChild(ckbx)
+                    edit_form.appendChild(label)
+                    edit_form.innerHTML += "<br>"
+                })
+                let confirm_btn = document.createElement("input")
+                confirm_btn.setAttribute("type", "submit")
+                confirm_btn.setAttribute("value", "Confirm")
+                confirm_btn.setAttribute("onsubmit", "edit_group()")
+                confirm_btn.setAttribute("style", "width: 100%;padding: 5px;")
+                edit_form.appendChild(confirm_btn)
+               
+            },
+            error: updateError,
+        })
+    })
+}
+
+function edit_group() {
+    $.ajax({
+        url: 'socialmedia/edit-group',
+        method: 'POST',
+        success: updatePosts,
+        error: updateError
+    })
+
+}
 
 // ======================== Text Formatter =========================
 function postFormatter(response) {
     let start = luxon.DateTime.fromJSDate(new Date(response.created_time))
     let end = luxon.DateTime.fromJSDate(new Date())
     let diff = end.diff(start, ['days', 'hours', 'minutes']).toObject()
-
-    // let result = '<div class="feed"><div class="head"><div class="user"><div class="profile-photo">'
-    //     + '<img src="./images/profile-' + response.user + '.jpg"></div><div class="ingo">'
-    //     + '<h3>' + response.firstname + ' ' + response.lastname + '</h3>'
-    //     + '<small>' + response.city + ', ' + dateDiffFormatter(diff) + '</small>'
-    //     + '</div></div><span class="edit"><i class="uil uil-ellipsis-h"></i></span></div>'
 
     let result = '<div class="feed"><div class="head"><div class="user"><div class="profile-photo">'
         + '<img src="./images/profile-' + response.user + '.jpg"></div><div class="ingo">'
@@ -985,7 +1110,14 @@ function postWithCommentsFormatter(response) {
         + '<img src="./images/profile-' + post.user + '.jpg"></div><div class="ingo">'
         + '<h3>' + post.firstname + ' ' + post.lastname + '</h3>'
         + '<small>' + post.city + ', 15 MINUTES AGO</small>'
-        + '</div></div><span class="edit"><i class="uil uil-ellipsis-h"></i></span></div>'
+        + '</div></div><div class="edit">'
+
+        if(response['mine'] == true) {
+            result += '<button class="uil uil-ellipsis-h"></button>'
+        }
+
+        result += '<div class="edit-dropdown-content"> <a class="delete-post">Delete</a> '
+        + '<a class="set-visib">Visibility</a></div> </div></div>'
         + '<div class="text" id="id_post_div_' + post.id + '">' + post.text + '</div>'
 
         + '<div class="action-buttons"><div class="interaction-buttons"><span><i class="uil uil-heart"></i></span><span><i class="uil uil-comment-dots"></i></span><span><i class="uil uil-share-alt"></i></span></div><div class="bookmark"><span><i class="uil uil-bookmark-full"></i></span></div></div>'
