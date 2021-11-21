@@ -6,6 +6,8 @@ urlpatterns = [
     path('login', views.login_action, name='login'),
     path('post', views.post_action, name='post'),
     path('get-posts', views.get_posts),
+    path('get-follow', views.get_follow),
+    path('get-follows', views.get_follows),
     path('get-postsNearby', views.get_nearbyPosts),
     path('get-local-news', views.get_news),
     path('addPost', views.addPost, name='newPost'),

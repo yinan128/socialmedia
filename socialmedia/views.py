@@ -205,15 +205,35 @@ def add_comment(request):
 
     return get_local(request, request.POST['lon'], request.POST['lat'])
 
-
-
-
-def get_posts(request):
+def get_follows(request):
     response_data = []
-    for post in Post.objects.all().order_by('time'):
-        geolocator = Nominatim(user_agent="geoapiExercises")
-        location = geolocator.reverse(str(post.latitude) + "," + str(post.longitude))
-        city = location.raw['address']['city']
+    user = request.user
+    following = user.profile.following.all() 
+
+    for follow in following: 
+        my_follow = {
+            'firstname': follow.first_name,
+            'lastname': follow.last_name
+        }
+        response_data.append(my_follow)
+
+    print('entter follows')
+    print(response_data)
+
+    response_json = json.dumps(response_data)
+    response = HttpResponse(response_json, content_type='application/json')
+    response['Access-Control-Allow-Origin'] = '*'
+    return response
+
+def get_follow(request):
+    print('enter follow!')
+    response_data = []
+    user = request.user
+    following = user.profile.following.all()
+    posts = Post.objects.filter(user__in=following).order_by("time")
+
+    for post in posts:
+        post_as_whole = {}
         my_post = {
             'type': 'post',
             'id': post.id,
@@ -224,7 +244,49 @@ def get_posts(request):
             'created_time': post.time.isoformat(),
             'longitude': post.longitude,
             'latitude': post.latitude,
-            'city': city
+            'city': post.city
+        }
+        comments = post.comment.all().order_by("time")
+        comment_list = []
+        for comment in comments:
+            my_comment = {
+                'type': 'comment',
+                'id': comment.id,
+                'user': comment.user.username,
+                'firstname': comment.user.first_name,
+                'lastname': comment.user.last_name,
+                'text': comment.text,
+                'created_time': comment.time.isoformat()
+            }
+            comment_list.append(my_comment)
+        post_as_whole['post'] = my_post
+        post_as_whole['comments'] = comment_list
+        response_data.append(post_as_whole)
+
+    response_json = json.dumps(response_data)
+    response = HttpResponse(response_json, content_type='application/json')
+    response['Access-Control-Allow-Origin'] = '*'
+    # print(response_data)
+    return response
+
+
+def get_posts(request):
+    response_data = []
+    for post in Post.objects.all().order_by('time'):
+        #geolocator = Nominatim(user_agent="geoapiExercises")
+        #location = geolocator.reverse(str(post.latitude) + "," + str(post.longitude))
+        #city = location.raw['address']['city']
+        my_post = {
+            'type': 'post',
+            'id': post.id,
+            'user': post.user.username,
+            'firstname': post.user.first_name,
+            'lastname': post.user.last_name,
+            'text': post.text,
+            'created_time': post.time.isoformat(),
+            'longitude': post.longitude,
+            'latitude': post.latitude,
+            'city': post.city
         }
         response_data.append(my_post)
 
@@ -238,9 +300,9 @@ def get_nearbyPosts(request):
     response_data = []
 
     for post in Post.objects.all().order_by('time'):
-        geolocator = Nominatim(user_agent="geoapiExercises")
-        location = geolocator.reverse(str(post.latitude) + "," + str(post.longitude))
-        city = location.raw['address']['city']
+        #geolocator = Nominatim(user_agent="geoapiExercises")
+        #location = geolocator.reverse(str(post.latitude) + "," + str(post.longitude))
+        #city = location.raw['address']['city']
         my_post = {
             'type': 'post',
             'id': post.id,
@@ -251,7 +313,7 @@ def get_nearbyPosts(request):
             'created_time': post.time.isoformat(),
             'longitude': post.longitude,
             'latitude': post.latitude,
-            'city': city
+            'city': post.city
         }
         response_data.append(my_post)
 

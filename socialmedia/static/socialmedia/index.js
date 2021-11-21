@@ -225,6 +225,7 @@ Bg3.addEventListener('click', () => {
 
 // ======================== onload events =========================
 function onloadEvents() {
+    getFollow();
     getPosts();
     acquireCurrLocation();
 }
@@ -270,19 +271,17 @@ function updateNews(response) {
 }
 
 
-function switchToGlobalChannel() {
-    // change menu item ui color
-    highlightMenuItem("globalChannel")
-    if (currPage == "globalChannel") return
-    currPage = "globalChannel"
-    // delete all middle part.
+function switchToFollowChannel() {
+    highlightMenuItem("followChannel")
+    if (currPage == "followChannel") return
+    currPage = "followChannel"
+
     document.getElementById("middlePart").innerHTML =
         '<div class="create-post" id="create-post">' +
         '<div id="editor"><script>let editor</script></div>' +
         '<input type="submit" value="Post" class="btn btn-primary btn-floatright" onclick="postAction()">' +
         '</div>' +
-        '<div class="feeds" id="allFeeds"></div>'
-
+        '<div class="feeds" id="followFeeds"></div>'
 
     ClassicEditor
         .create( document.querySelector( '#editor' ))
@@ -293,16 +292,36 @@ function switchToGlobalChannel() {
             console.error( error );
         } );
 
-
     $.ajax({
-        url: "/socialmedia/get-posts",
+        url: "/socialmedia/get-follow",
         type: "GET",
-        success: updatePosts,
+        success: updateFollowPosts,
         error: updateError
     })
 
+    window.setInterval(updateFollowPosts, 5000);
 }
 
+function updateFollowPosts(response) {
+    $(response).each(function() {
+        if (this.type == "comment" || this == undefined) {
+            return
+        }
+        console.log(this)
+        let post_id = "id_post_div_"+this.post.id
+        if (document.getElementById(post_id) == null && document.getElementById("followFeeds") != null) {
+            $("#followFeeds").prepend(postWithCommentsFormatter(this))
+        }else{
+            comments = this.comments
+            father = document.getElementById("comments_post_div_" + this.post.id)
+            for (let i=0; i<comments.length; i+= 1){
+                if (document.getElementById("id_comment_div_"+comments[i].id) == null && document.getElementById("followFeeds") != null){
+                    $("#comments_post_div_"+this.post.id).prepend(commentFormatter(comments[i]))
+                }
+            }
+        }
+    })
+}
 
 function updatePosts(response) {
     // todo: clean deleted posts.
@@ -314,6 +333,14 @@ function updatePosts(response) {
         let post_id = "id_post_div_"+this.id
         if (document.getElementById(post_id) == null) {
             $("#allFeeds").prepend(postFormatter(this))
+        }else{
+            comments = this.comments
+            father = document.getElementById("comments_post_div_" + this.post.id)
+            for (let i=0; i<comments.length; i+= 1){
+                if (document.getElementById("id_comment_div_"+comments[i].id) == null && document.getElementById("followFeeds") != null){
+                    $("#comments_post_div_"+this.post.id).prepend(commentFormatter(comments[i]))
+                }
+            }
         }
     })
 }
@@ -356,6 +383,11 @@ function switchToLocalStream() {
     })
 }
 
+function updateFollow(response){
+    $(response).each(function() {
+        $("#messages").prepend(followFormatter(this))
+    })
+}
 
 function updateLocalPosts(response) {
     $(response).each(function() {
@@ -750,6 +782,17 @@ function commentFormatter(comment){
     return result
 }
 
+function followFormatter(follow){
+    let result = '<div class="message">' 
+                + '<div class="profile-photo">'
+                + '<img src="./images/profile-2.jpg">'
+                + '</div>'
+                + '<div class="message-body">'
+                + '<h5>' + follow.firstname + ' ' + follow.lastname + '</h5>'
+                + '</div>'
+                + '</div>'
+    return result
+}
 
 // ======================== HELPERS =========================
 function getCSRFToken() {
@@ -810,6 +853,15 @@ function foldComments(post_id) {
     document.getElementById("comment_display_" + post_id).setAttribute('onclick', "displayComments(" + post_id + ")");
 }
 
+//get following
+function getFollow() {
+    $.ajax({
+        url: "/socialmedia/get-follows",
+        datatype: "json",
+        success: updateFollow,
+        error: updateError
+    })
+}
 
 // get posts
 function getPosts() {
