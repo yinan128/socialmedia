@@ -378,7 +378,21 @@ def get_local(request, longitude, latitude):
             comment_list.append(my_comment)
         post_as_whole['post'] = my_post
         post_as_whole['comments'] = comment_list
-        response_data.append(post_as_whole)
+
+        # Check post visibility
+        if( post.visibility == "Public" or my_post['mine']):
+            response_data.append(post_as_whole)
+
+        elif( post.visibility == "Private" and post.user == request.user):
+            response_data.append(post_as_whole)
+
+        elif( post.visibility == "Group" ) :
+            found = False
+            for group in post.hide_groups.all():
+                if request.user in group.users.all():
+                    found = True
+            if not found:
+                response_data.append(post_as_whole)
 
     response_json = json.dumps(response_data)
     response = HttpResponse(response_json, content_type='application/json')
@@ -555,14 +569,14 @@ def add_group_action(request):
 def delete_post_action(request):
     post_id = int(request.POST['post_id'])
     post = get_object_or_404(Post, id=post_id)
+    if (request.user != post.user):
+        return _my_json_error_response("You are not authorized to delete others' post.", status=400)
     post.delete()
-    # return redirect(reverse('global_stream'))
-    response_data = [{"post_id": post_id}]
-    delete_post = {"post_id": post_id}
-    response_json = json.dumps(response_data)
-    response = HttpResponse(response_json, content_type='application/json')
-    response['Access-Control-Allow-Origin'] = '*'
-    return response
+
+    if request.POST['page'] == "globalChannel":
+        return get_posts(request)
+    elif request.POST['page'] == "localStream":
+        return get_local(request, float(request.POST['long']) * 10000, float(request.POST['lat']) * 10000)
 
 
 def edit_group_action(request):

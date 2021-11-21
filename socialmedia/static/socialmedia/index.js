@@ -226,7 +226,7 @@ Bg3.addEventListener('click', () => {
 // ======================== Eve events =========================
 function onloadEvents() {
     currPage = "globalChannel";
-    getPosts();
+    refreshGlobalPosts();
     acquireCurrLocation();
 
     document.onclick = function(event) {
@@ -428,7 +428,10 @@ function switchToLocalStream() {
 
 
 function updateLocalPosts(response) {
+    // prepend new posts on top.
+    let postIdFromResponse = []
     $(response).each(function() {
+        postIdFromResponse.push(this.post.id.toString())
         let post_id = "id_post_div_"+this.post.id
         if (document.getElementById(post_id) == null) {
             // new post found.
@@ -448,6 +451,21 @@ function updateLocalPosts(response) {
             }
         }
     })
+
+    // remove the deleted posts along with their comments.
+    console.log(postIdFromResponse)
+    let removeList = []
+    for (let i = 0; i < document.getElementsByClassName("feed").length; i++) {
+        let feed = document.getElementsByClassName("feed")[i]
+        let postId = feed.childNodes[1].id.replace("id_post_div_", "")
+        // deal with deleted posts
+        if (!postIdFromResponse.includes(postId)) {
+            removeList.push(feed)
+        }
+    }
+    for (let i = 0; i < removeList.length; i++) {
+        removeList[i].remove()
+    }
 
     // update edit button with onclick function
     let edit_btns = document.getElementsByClassName("uil-ellipsis-h")
@@ -761,8 +779,11 @@ function delete_post() {
         data: {
             post_id: post_id,
             csrfmiddlewaretoken: getCSRFToken(),
+            page: currPage,
+            long: currLocation.coords.longitude,
+            lat: currLocation.coords.latitude,
         },
-        success: updatePosts,
+        success: updateLocalPosts,
         error: updateError
     })
 }
@@ -1085,7 +1106,7 @@ function postFormatter(response) {
         + '</div></div><div class="edit">'
 
     // Only show ellipsis button if it's mine post
-    if(response['mine'] == true) {
+    if(response['mine']) {
         result += '<button class="uil uil-ellipsis-h"></button>'
     }
 
@@ -1248,15 +1269,60 @@ function foldComments(post_id) {
     document.getElementById("comment_display_" + post_id).setAttribute('onclick', "displayComments(" + post_id + ")");
 }
 
+// called by intervals.
+function refresh() {
+    if (currPage == "globalChannel") {
+        refreshGlobalPosts()
+    } else if (currPage == "localStream") {
+        refreshLocalPosts()
+    } else if (currPage == "localNews") {
+        refreshLocalNews()
+    }
+}
 
 // get posts
-function getPosts() {
+function refreshGlobalPosts() {
     $.ajax({
         url: "/socialmedia/get-posts",
         type: "GET",
         success: updateLocalPosts,
         error: updateError
     })
+}
+
+function refreshLocalPosts() {
+    let lat = parseInt(10000 * currLocation.coords.latitude).toString();
+    let lon = parseInt(10000 * currLocation.coords.longitude).toString();
+
+    $.ajax({
+        url: "/socialmedia/get-local/"+lon+"/"+lat+"/",
+        type: "GET",
+        success: updateLocalPosts,
+        error: updateError
+    })
+}
+
+function refreshLocalNews() {
+    //suppose the geolocation is cached.
+    let lat = parseInt(10000 * currLocation.coords.latitude).toString();
+    let lon = parseInt(10000 * currLocation.coords.longitude).toString();
+
+    $.ajax({
+        url: "/socialmedia/get-local-news/"+lon+"/"+lat+"/",
+        type: "GET",
+        success: updateNews,
+        error: updateError
+    })
+}
+
+
+function focusToPostInput() {
+    if (currPage == "globalChannel" || currPage == "localStream") {
+        document.getElementsByClassName("ck ck-content ck-editor__editable ck-rounded-corners ck-editor__editable_inline ck-blurred")[0].focus()
+    } else {
+        switchToGlobalChannel()
+    }
+
 }
 
 // END

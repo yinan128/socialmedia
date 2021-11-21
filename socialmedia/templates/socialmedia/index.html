@@ -145,7 +145,7 @@
                     </a>                        
                 </div>
                 <!------------------- END OF SIDEBAR -------------------->
-                <label for="create-post" class="btn btn-primary">Create Post</label>
+                <label for="create-post" class="btn btn-primary" onclick="focusToPostInput()">Create Post</label>
             </div>
             <!------------------- END OF LEFT -------------------->
 
@@ -199,91 +199,6 @@
                 </div>
                 <!------------------- FEEDS --------------------->
                 <div class="feeds" id="allFeeds">
-                    <!------------------- FEED 1 --------------------->
-                    <div class="feed">
-                        <div class="head">
-                            <div class="user">
-                                <div class="profile-photo">
-                                    <img src="./images/profile-13.jpg">
-                                </div>
-                                <div class="ingo">
-                                    <h3>UserA</h3>
-                                    <small>Dubai, 15 MINUTES AGO</small>
-                                </div>
-                            </div>
-                            <div class="edit">
-                                <button class="uil uil-ellipsis-h"></button>
-                                <div class="edit-dropdown-content">
-                                    <a class="delete-post">Delete</a>
-                                    <a class="set-visib">Visibility</a>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="text"> Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text.</div>
-                        <div class="action-buttons">
-                            <div class="interaction-buttons">
-                                <span><i class="uil uil-heart"></i></span>
-                                <span><i class="uil uil-comment-dots"></i></span>
-                                <span><i class="uil uil-share-alt"></i></span>
-                            </div>
-                            <div class="bookmark">
-                                <span><i class="uil uil-bookmark-full"></i></span>
-                            </div>
-                        </div>
-
-                        <div class="liked-by">
-                            <span><img src="./images/profile-10.jpg"></span>
-                            <span><img src="./images/profile-4.jpg"></span>
-                            <span><img src="./images/profile-15.jpg"></span>
-                            <p>Liked by <b>UserC</b> and <b>4 others</b></p>
-                        </div>
-
-                        <div class="comments text-muted">View all 277 comments</div>
-                    </div>
-                    <!---------------- END OF FEED ----------------->
-                    <!------------------- FEED 2 --------------------->
-                    <div class="feed">
-                        <div class="head">
-                            <div class="user">
-                                <div class="profile-photo">
-                                    <img src="./images/profile-14.jpg">
-                                </div>
-                                <div class="ingo">
-                                    <h3>UserB</h3>
-                                    <small>Miami, 2 HOURS AGO</small>
-                                </div>
-                            </div>
-                            <span class="edit">
-                                <i class="uil uil-ellipsis-h"></i>
-                            </span>
-                        </div>
-
-                        <div class="text"> Some text. Some text. Some text. Some text. Some text. Some text. Some text. </div>
-
-                        <div class="photo">
-                            <img src="./images/feed-2.jpg">
-                        </div>
-
-                        <div class="action-buttons">
-                            <div class="interaction-buttons">
-                                <span><i class="uil uil-heart"></i></span>
-                                <span><i class="uil uil-comment-dots"></i></span>
-                                <span><i class="uil uil-share-alt"></i></span>
-                            </div>
-                            <div class="bookmark">
-                                <span><i class="uil uil-bookmark-full"></i></span>
-                            </div>
-                        </div>
-
-                        <div class="liked-by">
-                            <span><img src="./images/profile-10.jpg"></span>
-                            <span><img src="./images/profile-4.jpg"></span>
-                            <span><img src="./images/profile-15.jpg"></span>
-                            <p>Liked by <b>UserD</b> and <b>3 others</b></p>
-                        </div>
-                        <div class="comments text-muted">View all 3 comments</div>
-                    </div>
-                    <!---------------- END OF FEED ----------------->
                 </div>
                 <!------------------------------- END OF FEEDS ------------------------------------>
             </div>
@@ -523,7 +438,7 @@
 
     window.onload = onloadEvents;
     //... also call getList every 3 seconds hereafter to update the list
-    {#window.setInterval(getPosts, 3000);#}
+    window.setInterval(refresh, 7000);
 
 </script>
 
