@@ -13,8 +13,8 @@ urlpatterns = [
     path('users-list', views.users_list_action, name="usersList"),
     path('add-group', views.add_group_action, name="addGroup"),
 
-    path('get-postsNearby', views.get_nearbyPosts),
-    path('get-local-news', views.get_news),
+    path('get-postsNearby/<str:longitude>/<str:latitude>/', views.get_nearbyPosts),
+    path('get-local-news/<str:longitude>/<str:latitude>/', views.get_news),
     path('get-local/<str:longitude>/<str:latitude>/', views.get_local),
     path('add-comment', views.add_comment),
     path('stat', views.get_stat, name='stat')

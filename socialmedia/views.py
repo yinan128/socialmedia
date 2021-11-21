@@ -252,25 +252,29 @@ def get_posts(request):
     response['Access-Control-Allow-Origin'] = '*'
     return response
 
+# given the longitude and latitude, return the posts (excluding comments) in the same city.
+def get_nearbyPosts(request, longitude, latitude):
+    if request.method == 'POST':
+        return HttpResponse({"error": 'invalid method'}, content_type='application/json', status=405)
+    if not request.user.id or not request.user.is_authenticated:
+        return HttpResponse({"error": 'not logged in'}, content_type='application/json', status=401)
 
-def get_nearbyPosts(request):
     response_data = []
+    longitude = str(float(longitude) / 10000)
+    latitude = str(float(latitude) / 10000)
+    geolocator = Nominatim(user_agent="geoapiExercises")
+    location = geolocator.reverse(latitude + "," + longitude)
+    city = location.raw['address']['city']
+    posts = Post.objects.filter(city__in=[city])
 
-    for post in Post.objects.all().order_by('time'):
-        geolocator = Nominatim(user_agent="geoapiExercises")
-        location = geolocator.reverse(str(post.latitude) + "," + str(post.longitude))
-        city = location.raw['address']['city']
+    for post in posts:
         my_post = {
-            'type': 'post',
-            'id': post.id,
-            'user': post.user.username,
             'firstname': post.user.first_name,
             'lastname': post.user.last_name,
             'text': cleanText(post.text),
             'created_time': post.time.isoformat(),
             'longitude': post.longitude,
             'latitude': post.latitude,
-            'city': city
         }
         response_data.append(my_post)
 
@@ -289,10 +293,17 @@ def cleanText(text):
 
 
 # todo: error handling.
-def get_news(request):
+def get_news(request, longitude, latitude):
+    if request.method == 'POST':
+        return HttpResponse({"error": 'invalid method'}, content_type='application/json', status=405)
+    if not request.user.id or not request.user.is_authenticated:
+        return HttpResponse({"error": 'not logged in'}, content_type='application/json', status=401)
+
     response_data = []
+    longitude = str(float(longitude) / 10000)
+    latitude = str(float(latitude) / 10000)
     geolocator = Nominatim(user_agent="geoapiExercises")
-    location = geolocator.reverse(str(request.POST['lat']) + "," + str(request.POST['long']))
+    location = geolocator.reverse(latitude + "," + longitude)
     city = location.raw['address']['city']
     i = 0
     for title, author, publish, description, url, imageUrl in getNewsFromCity(city):

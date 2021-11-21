@@ -288,6 +288,19 @@ function switchToLocalNews() {
     currPage = "localNews"
     // delete all middle part.
     document.getElementById("middlePart").innerHTML = '<div class="feeds" id="allNews"></div>'
+
+    //suppose the geolocation is cached.
+    let lat = parseInt(10000 * currLocation.coords.latitude).toString();
+    let lon = parseInt(10000 * currLocation.coords.longitude).toString();
+
+    $.ajax({
+        url: "/socialmedia/get-local-news/"+lon+"/"+lat+"/",
+        type: "GET",
+        success: updateNews,
+        error: updateError
+    })
+
+
     $.ajax({
         url: "/socialmedia/get-local-news",
         type: "POST",
@@ -415,10 +428,15 @@ function updateLocalPosts(response) {
         } else {
             let comments = this.comments
             let father = document.getElementById("comments_post_div_" + this.post.id)
+            // prepend new comment on top.
             for (let i=0; i<comments.length; i++){
                 if (document.getElementById("id_comment_div_"+comments[i].id) == null){
                     $("#comments_post_div_"+this.post.id).prepend(commentFormatter(comments[i]))
                 }
+            }
+            if (document.getElementById("comment_display_" + this.post.id).innerHTML != "Fold comments.") {
+                let commentCount = document.getElementById("comments_post_div_" + this.post.id).childElementCount
+                document.getElementById("comment_display_" + this.post.id).innerHTML = "View all " + commentCount + " comments.";
             }
         }
     })
@@ -601,14 +619,12 @@ function switchToMapit() {
     document.getElementById("middlePart").innerHTML =
         '<div class="feeds" id="mapitPlaceholder" style="width:600px;height:450px;"></div>'
 
+    //suppose the geolocation is cached.
+    let lat = parseInt(10000 * currLocation.coords.latitude).toString();
+    let lon = parseInt(10000 * currLocation.coords.longitude).toString();
     $.ajax({
-        url: "/socialmedia/get-postsNearby",
-        type: "POST",
-        data: {
-            lat: currLocation.coords.latitude,
-            long: currLocation.coords.longitude,
-            csrfmiddlewaretoken: getCSRFToken()
-        },
+        url: "/socialmedia/get-postsNearby/"+lon+"/"+lat+"/",
+        type: "GET",
         success: updateMap,
         error: updateError
     })
