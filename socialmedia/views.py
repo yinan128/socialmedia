@@ -175,8 +175,10 @@ def post_action(request):
     print(post.longitude)
     print(post.latitude)
     post.save()
-
-    return get_posts(request)
+    if request.POST['page'] == "globalChannel":
+        return get_posts(request)
+    elif request.POST['page'] == "localStream":
+        return get_local(request, float(request.POST['long']) * 10000, float(request.POST['lat']) * 10000)
 
 def add_comment(request):
     if request.method != 'POST':
@@ -211,12 +213,12 @@ def add_comment(request):
 
 
 def get_posts(request):
+    if not request.user.id or not request.user.is_authenticated:
+        return HttpResponse({"error": 'not logged in'}, content_type='application/json', status=401)
+
     response_data = []
     for post in Post.objects.all().order_by('time'):
-
-        geolocator = Nominatim(user_agent="geoapiExercises")
-        location = geolocator.reverse(str(post.latitude) + "," + str(post.longitude))
-        city = location.raw['address']['city']
+        post_as_whole = {}
         my_post = {
             'type': 'post',
             'id': post.id,
@@ -227,15 +229,31 @@ def get_posts(request):
             'created_time': post.time.isoformat(),
             'longitude': post.longitude,
             'latitude': post.latitude,
-            'city': city,
+            'city': post.city,
             'mine': (post.user == request.user),
         }
+        comments = post.comment.all().order_by("time")
+        comment_list = []
+        for comment in comments:
+            my_comment = {
+                'type': 'comment',
+                'id': comment.id,
+                'user': comment.user.username,
+                'firstname': comment.user.first_name,
+                'lastname': comment.user.last_name,
+                'text': comment.text,
+                'created_time': comment.time.isoformat()
+            }
+            comment_list.append(my_comment)
+        post_as_whole['post'] = my_post
+        post_as_whole['comments'] = comment_list
+
         # Check post visibility
         if( post.visibility == "Public" or my_post['mine']):
-            response_data.append(my_post)
+            response_data.append(post_as_whole)
 
         elif( post.visibility == "Private" and post.user == request.user):
-            response_data.append(my_post)
+            response_data.append(post_as_whole)
 
         elif( post.visibility == "Group" ) :
             found = False
@@ -243,9 +261,7 @@ def get_posts(request):
                 if request.user in group.users.all():
                     found = True
             if not found:
-                response_data.append(my_post)
-
-
+                response_data.append(post_as_whole)
 
     response_json = json.dumps(response_data)
     response = HttpResponse(response_json, content_type='application/json')
@@ -292,13 +308,11 @@ def cleanText(text):
         .replace("<h3>","").replace("</h3>","<br>")
 
 
-# todo: error handling.
 def get_news(request, longitude, latitude):
     if request.method == 'POST':
         return HttpResponse({"error": 'invalid method'}, content_type='application/json', status=405)
     if not request.user.id or not request.user.is_authenticated:
         return HttpResponse({"error": 'not logged in'}, content_type='application/json', status=401)
-
     response_data = []
     longitude = str(float(longitude) / 10000)
     latitude = str(float(latitude) / 10000)
@@ -324,6 +338,8 @@ def get_news(request, longitude, latitude):
     return response
 
 def get_local(request, longitude, latitude):
+    if not request.user.id or not request.user.is_authenticated:
+        return HttpResponse({"error": 'not logged in'}, content_type='application/json', status=401)
     response_data = []
     longitude = str(float(longitude) / 10000)
     latitude = str(float(latitude) / 10000)

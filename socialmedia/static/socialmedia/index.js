@@ -19,7 +19,7 @@ const Bg3 = document.querySelector('.bg-3');
 
 // current location of the user.
 var currLocation;
-var currPage = "globalChannel";
+var currPage;
 
 
 // ================ SIDEBAR ===============
@@ -225,17 +225,10 @@ Bg3.addEventListener('click', () => {
 
 // ======================== Eve events =========================
 function onloadEvents() {
+    currPage = "globalChannel";
     getPosts();
     acquireCurrLocation();
-    var edit_btns = document.getElementsByClassName("uil-ellipsis-h")
-    for( var i=0; i<edit_btns.length; i++ ) {
-        edit_btns[i].addEventListener('click', show_edit_dropdown)
-    }
 
-    var edit_vis = document.getElementsByClassName("set-visib")
-    for( var i=0; i<edit_vis.length; i++ ) {
-        edit_vis[i].addEventListener('click', show_edit_visibility)
-    }
     document.onclick = function(event) {
         var a = event.target;
         vis_div = document.getElementById("visibility-form")
@@ -299,19 +292,6 @@ function switchToLocalNews() {
         success: updateNews,
         error: updateError
     })
-
-
-    $.ajax({
-        url: "/socialmedia/get-local-news",
-        type: "POST",
-        data: {
-            lat: currLocation.coords.latitude,
-            long: currLocation.coords.longitude,
-            csrfmiddlewaretoken: getCSRFToken()
-        },
-        success: updateNews,
-        error: updateError
-    })
 }
 
 function updateNews(response) {
@@ -348,7 +328,7 @@ function switchToGlobalChannel() {
     $.ajax({
         url: "/socialmedia/get-posts",
         type: "GET",
-        success: updatePosts,
+        success: updateLocalPosts,
         error: updateError
     })
 
@@ -440,6 +420,17 @@ function updateLocalPosts(response) {
             }
         }
     })
+
+    // update edit button with onclick function
+    let edit_btns = document.getElementsByClassName("uil-ellipsis-h")
+    for( let i=0; i<edit_btns.length; i++ ) {
+        edit_btns[i].addEventListener('click', show_edit_dropdown)
+    }
+
+    let edit_vis = document.getElementsByClassName("set-visib")
+    for( let i=0; i<edit_vis.length; i++ ) {
+        edit_vis[i].addEventListener('click', show_edit_visibility)
+    }
 }
 
 function switchToStat() {
@@ -681,6 +672,7 @@ function updateMap(response) {
 function postAction() {
     let post_body = editor.getData()
     editor.setData('')
+    console.log(currPage)
 
     $.ajax({
         url: "/socialmedia/post",
@@ -690,9 +682,10 @@ function postAction() {
             lat: currLocation.coords.latitude,
             long: currLocation.coords.longitude,
             visibility: 'Public',
-            csrfmiddlewaretoken: getCSRFToken()
+            csrfmiddlewaretoken: getCSRFToken(),
+            page: currPage
         },
-        success: updatePosts,
+        success: updateLocalPosts,
         error: updateError
     })
 }
@@ -717,17 +710,6 @@ function addComment(id) {
         success: updateLocalPosts,
         error: updateError
     })
-
-    // update edit button with onclick function
-    var edit_btns = document.getElementsByClassName("uil-ellipsis-h")
-    for( var i=0; i<edit_btns.length; i++ ) {
-        edit_btns[i].addEventListener('click', show_edit_dropdown)
-    }
-
-    var edit_vis = document.getElementsByClassName("set-visib")
-    for( var i=0; i<edit_vis.length; i++ ) {
-        edit_vis[i].addEventListener('click', show_edit_visibility)
-    }
 }
 
 
@@ -951,11 +933,23 @@ function postFormatter(response) {
 function postWithCommentsFormatter(response) {
     let post = response.post
     let comments = response.comments
+    let start = luxon.DateTime.fromJSDate(new Date(post.created_time))
+    let end = luxon.DateTime.fromJSDate(new Date())
+    let diff = end.diff(start, ['days', 'hours', 'minutes']).toObject()
+
     let result = '<div class="feed"><div class="head"><div class="user"><div class="profile-photo">'
         + '<img src="./images/profile-' + post.user + '.jpg"></div><div class="ingo">'
         + '<h3>' + post.firstname + ' ' + post.lastname + '</h3>'
-        + '<small>' + post.city + ', 15 MINUTES AGO</small>'
-        + '</div></div><span class="edit"><i class="uil uil-ellipsis-h"></i></span></div>'
+        + '<small>' + post.city + ', ' + dateDiffFormatter(diff) + '</small>'
+        + '</div></div><div class="edit">'
+
+    // Only show ellipsis button if it's mine post
+    if(post['mine']) {
+        result += '<button class="uil uil-ellipsis-h"></button>'
+    }
+
+    result += '<div class="edit-dropdown-content"> <a class="edit-post">Edit</a> '
+        + '<a class="set-visib">Visibility</a></div> </div></div>'
         + '<div class="text" id="id_post_div_' + post.id + '">' + post.text + '</div>'
 
         + '<div class="action-buttons"><div class="interaction-buttons"><span><i class="uil uil-heart"></i></span><span><i class="uil uil-comment-dots"></i></span><span><i class="uil uil-share-alt"></i></span></div><div class="bookmark"><span><i class="uil uil-bookmark-full"></i></span></div></div>'
@@ -1088,8 +1082,8 @@ function foldComments(post_id) {
 function getPosts() {
     $.ajax({
         url: "/socialmedia/get-posts",
-        datatype: "json",
-        success: updatePosts,
+        type: "GET",
+        success: updateLocalPosts,
         error: updateError
     })
 }
