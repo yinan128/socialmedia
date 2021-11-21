@@ -490,7 +490,7 @@ main .container .left .profile {
   z-index: 2;
 }
 
-#visibility-form, #add-group-form{
+.overlay-form {
   position: absolute;
   top: 50%;
   left: 50%;
@@ -608,6 +608,10 @@ main .container .right {
   right: 0;
 }
 
+.group-edit-btn {
+  padding: 5px;
+  float: right;
+}
 /* ================= FRIEND REQUESTS =================== */
 .right .friend-requests {
   margin-top: 1rem;

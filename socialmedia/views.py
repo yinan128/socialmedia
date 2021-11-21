@@ -360,7 +360,8 @@ def get_local(request, longitude, latitude):
             'created_time': post.time.isoformat(),
             'longitude': post.longitude,
             'latitude': post.latitude,
-            'city': post.city
+            'city': post.city,
+            'mine': (request.user == post.user)
         }
         comments = post.comment.all().order_by("time")
         comment_list = []
@@ -492,7 +493,32 @@ def get_groups(request):
     response['Access-Control-Allow-Origin'] = '*'
     return response
 
+# Get single group with id given in request
+def get_group(request):
+    group_id = int(request.POST['group_id'])
+    group = get_object_or_404(Group, id=group_id)
 
+    response_data = []
+    users_list = []
+    for user in group.users.all():
+        user_info = {
+            'user_id': user.id,
+            'first_name': user.first_name,
+            'last_name': user.last_name
+        }
+        users_list.append(user_info)
+
+    group_info = {
+        'group_id': group.id,
+        'group_name': group.name,
+        'group_users': users_list
+    }
+    print(group_info)
+    response_data.append(group_info)
+    response_json = json.dumps(response_data)
+    response = HttpResponse(response_json, content_type='application/json')
+    response['Access-Control-Allow-Origin'] = '*'
+    return response
 
 # get all users list
 def users_list_action(request):
@@ -524,6 +550,34 @@ def add_group_action(request):
     group.save()
 
     return redirect(reverse('global_stream'))
+
+
+def delete_post_action(request):
+    post_id = int(request.POST['post_id'])
+    post = get_object_or_404(Post, id=post_id)
+    post.delete()
+    # return redirect(reverse('global_stream'))
+    response_data = [{"post_id": post_id}]
+    delete_post = {"post_id": post_id}
+    response_json = json.dumps(response_data)
+    response = HttpResponse(response_json, content_type='application/json')
+    response['Access-Control-Allow-Origin'] = '*'
+    return response
+
+
+def edit_group_action(request):
+    print(request)
+    group = get_object_or_404(Group, id=int(request.POST['group_id']))
+    group.users.clear()
+    for key,value in request.POST.items():
+        if key.startswith("user_ckbx"):
+            print(value)
+            user = get_object_or_404(User, id=int(value))
+            group.users.add(user)
+
+    return redirect(reverse('global_stream'))
+
+
 
 
 def _my_json_error_response(message, status=200):
