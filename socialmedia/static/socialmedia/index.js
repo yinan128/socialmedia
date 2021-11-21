@@ -236,6 +236,13 @@ function onloadEvents() {
     for( var i=0; i<edit_vis.length; i++ ) {
         edit_vis[i].addEventListener('click', show_edit_visibility)
     }
+
+
+    var delete_btns = document.getElementsByClassName("delete-post")
+    for( var i=0; i<delete_btns.length; i++ ) {
+        delete_btns[i].addEventListener('click', delete_post)
+    }
+
     document.onclick = function(event) {
         var a = event.target;
         vis_div = document.getElementById("visibility-form")
@@ -345,7 +352,17 @@ function switchToGlobalChannel() {
 function updatePosts(response) {
     // todo: clean deleted posts.
     // new post found.
+    console.log(response)
     $(response).each(function() {
+        console.log(this)
+        if('post_id' in this) {
+            let post_div_id = "#id_post_div_"+this['post_id']
+            if( $(post_div_id) != null) {
+                let feed_div = $(post_div_id).parentsUntil(".feeds", ".feed")[0]
+                feed_div.remove()
+                return
+            }
+        }
         if (this.type == "comment") {
             return
         }
@@ -364,6 +381,12 @@ function updatePosts(response) {
     var edit_vis = document.getElementsByClassName("set-visib")
     for( var i=0; i<edit_vis.length; i++ ) {
         edit_vis[i].addEventListener('click', show_edit_visibility)
+    }
+
+
+    var delete_btns = document.getElementsByClassName("delete-post")
+    for( var i=0; i<delete_btns.length; i++ ) {
+        delete_btns[i].addEventListener('click', delete_post)
     }
 }
 
@@ -712,10 +735,33 @@ function addComment(id) {
     for( var i=0; i<edit_vis.length; i++ ) {
         edit_vis[i].addEventListener('click', show_edit_visibility)
     }
+
+    var delete_btns = document.getElementsByClassName("delete-post")
+    for( var i=0; i<delete_btns.length; i++ ) {
+        delete_btns[i].addEventListener('click', delete_post)
+    }
 }
 
 
 // ======================== Edit Dropdown Menu =========================
+
+function delete_post() {
+    var feed_div = $(this).parentsUntil(".feeds", ".feed")[0]
+    var text_div = feed_div.getElementsByClassName("text")[0]
+    var post_id = text_div.id.split("_").at(-1)
+    console.log(post_id)
+    $.ajax({
+        url: "/socialmedia/delete-post",
+        datatype: "json",
+        method: 'POST',
+        data: {
+            post_id: post_id,
+            csrfmiddlewaretoken: getCSRFToken(),
+        },
+        success: updatePosts,
+        error: updateError
+    })
+}
 
 function show_edit_dropdown() {
     var parent_div = this.parentElement
@@ -920,7 +966,7 @@ function postFormatter(response) {
         result += '<button class="uil uil-ellipsis-h"></button>'
     }
 
-    result += '<div class="edit-dropdown-content"> <a class="edit-post">Edit</a> '
+    result += '<div class="edit-dropdown-content"> <a class="delete-post">Delete</a> '
         + '<a class="set-visib">Visibility</a></div> </div></div>'
         + '<div class="text" id="id_post_div_' + response.id + '">' + response.text + '</div>'
         + '<div class="action-buttons"><div class="interaction-buttons"><span><i class="uil uil-heart"></i></span><span><i class="uil uil-comment-dots"></i></span><span><i class="uil uil-share-alt"></i></span></div><div class="bookmark"><span><i class="uil uil-bookmark-full"></i></span></div></div>'

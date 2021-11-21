@@ -12,6 +12,7 @@ urlpatterns = [
     path('get-visibility', views.get_post_visibility, name="get_visibility"),
     path('users-list', views.users_list_action, name="usersList"),
     path('add-group', views.add_group_action, name="addGroup"),
+    path('delete-post', views.delete_post_action, name="deletePost"),
 
     path('get-postsNearby', views.get_nearbyPosts),
     path('get-local-news', views.get_news),

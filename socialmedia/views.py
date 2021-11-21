@@ -499,6 +499,19 @@ def add_group_action(request):
     return redirect(reverse('global_stream'))
 
 
+def delete_post_action(request):
+    post_id = int(request.POST['post_id'])
+    post = get_object_or_404(Post, id=post_id)
+    post.delete()
+    # return redirect(reverse('global_stream'))
+    response_data = [{"post_id": post_id}]
+    delete_post = {"post_id": post_id}
+    response_json = json.dumps(response_data)
+    response = HttpResponse(response_json, content_type='application/json')
+    response['Access-Control-Allow-Origin'] = '*'
+    return response
+
+
 def _my_json_error_response(message, status=200):
     # You can create your JSON by constructing the string representation yourself (or just use json.dumps)
     response_json = '{ "error": "' + message + '" }'
