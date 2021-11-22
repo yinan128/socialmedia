@@ -27,10 +27,6 @@
             <h2 class="log">
                 Social
             </h2>
-            <div class="search-bar">
-                <i class="uil uil-search"></i>
-                <input type="search" placeholder="Search for creators, inspirations, and projects">
-            </div>
             <div class="create">
                 <div class="profile-photo">
                     <img src="{{picture}}">
@@ -83,7 +79,6 @@
                     </a>                      
                 </div>
                 <!------------------- END OF SIDEBAR -------------------->
-                <label for="create-post" class="btn btn-primary" onclick="focusToPostInput()">Create Post</label>
             </div>
             <!------------------- END OF LEFT -------------------->
 
@@ -256,7 +251,7 @@
 
     window.onload = onloadEvents;
     //... also call getList every 3 seconds hereafter to update the list
-    window.setInterval(refresh, 7000);
+    window.setInterval(refresh, 3000);
     //window.setInterval(getFollow, 3000);
 
 </script>

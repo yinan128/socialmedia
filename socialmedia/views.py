@@ -236,6 +236,8 @@ def get_follow(request):
 
     for post in posts:
         post_as_whole = {}
+        profile = Profile.objects.get(user=post.user.id)
+        picture = profile.picture
         my_post = {
             'type': 'post',
             'id': post.id,
@@ -249,7 +251,8 @@ def get_follow(request):
             'latitude': post.latitude,
             'city': post.city,
             'follow': '1',
-            'mine': (request.user == post.user)
+            'mine': (request.user == post.user),
+            'picture': picture
         }
         comments = post.comment.all().order_by("time")
         comment_list = []
@@ -462,6 +465,8 @@ def get_local(request, longitude, latitude):
     for post in posts:
         post_as_whole = {}
         is_follow = '1' if post.user in following else '0'
+        profile = Profile.objects.get(user=post.user.id)
+        picture = profile.picture
         my_post = {
             'type': 'post',
             'id': post.id,
@@ -475,11 +480,14 @@ def get_local(request, longitude, latitude):
             'latitude': post.latitude,
             'city': post.city,
             'follow': is_follow,
-            'mine': (request.user == post.user)
+            'mine': (request.user == post.user),
+            'picture': picture,
         }
         comments = post.comment.all().order_by("time")
         comment_list = []
         for comment in comments:
+            profile = Profile.objects.get(user=comment.user.id)
+            picture = profile.picture
             my_comment = {
                 'type': 'comment',
                 'id': comment.id,
@@ -487,7 +495,8 @@ def get_local(request, longitude, latitude):
                 'firstname': comment.user.first_name,
                 'lastname': comment.user.last_name,
                 'text': comment.text,
-                'created_time': comment.time.isoformat()
+                'created_time': comment.time.isoformat(),
+                'picture': picture
             }
             comment_list.append(my_comment)
         post_as_whole['post'] = my_post
