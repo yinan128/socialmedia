@@ -831,7 +831,7 @@ function edit_post_vis() {
         datatype: "json",
         success: function() {
             overlay_off();
-            updatePosts();
+            // updatePosts();
         },
         error: function() {
             overlay_off();
@@ -954,7 +954,7 @@ function add_group() {
         datatype: "json",
         success: function() {
             overlay_off();
-            updatePosts();
+            // updatePosts();
         },
         error: function() {
             overlay_off();
@@ -1087,7 +1087,7 @@ function edit_group() {
     $.ajax({
         url: 'socialmedia/edit-group',
         method: 'POST',
-        success: updatePosts,
+        // success: updatePosts,
         error: updateError
     })
 
