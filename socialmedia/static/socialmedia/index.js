@@ -494,11 +494,11 @@ function switchToStat() {
     document.getElementById("middlePart").innerHTML =
         '<div class="stat">'
         + '<h3>SocialMedia GitHub Registerred vs. Google Registerred</h3>'
-        + '<div id="container" style="width: 600px; height: 400px"></div>'
+        + '<div id="fig1" style="width: 600px; height: 400px"></div>'
         + '<h3>8 Places where most of the posts come from</h3>'
-        + '<div id="container2" style="width: 600px; height: 400px"></div>'
+        + '<div id="fig2" style="width: 600px; height: 400px"></div>'
         + '<h3>Number of new posts published every day</h3>'
-        + '<div id="container3" style="width: 600px; height: 400px"></div>'
+        + '<div id="fig3" style="width: 600px; height: 400px"></div>'
         + '</div>'
       
     $.ajax({
@@ -516,7 +516,7 @@ function updateData(response) {
 }
 
 function updatefig1(response) {
-    var dom = document.getElementById("container");
+    var dom = document.getElementById("fig1");
     var myChart = echarts.init(dom);
     var app = {};
 
@@ -573,7 +573,7 @@ function updatefig1(response) {
 }
 
 function updatefig2(response) {
-    var dom = document.getElementById("container2");
+    var dom = document.getElementById("fig2");
     var myChart = echarts.init(dom);
     var app = {};
 
@@ -626,7 +626,7 @@ function updatefig2(response) {
 }
 
 function updatefig3(response) {
-    var chartDom = document.getElementById('container3');
+    var chartDom = document.getElementById('fig3');
     var myChart = echarts.init(chartDom);
     var app={}
     var option;
@@ -969,14 +969,14 @@ function update_group_list(response) {
         msg_div.setAttribute("class", "message")
         msg_div.setAttribute("id", "group_msg_"+this['group_id'])
 
-        let pic_div = document.createElement("div")
-        pic_div.setAttribute("class", "profile-photo")
-        pic_div.innerHTML='<img src="./images/profile-2.jpg">'
-        msg_div.appendChild(pic_div)
+        //let pic_div = document.createElement("div")
+        //pic_div.setAttribute("class", "profile-photo")
+        //pic_div.innerHTML='<img src="./images/profile-2.jpg">'
+        //msg_div.appendChild(pic_div)
 
         let body_div = document.createElement("div")
         body_div.setAttribute("class", "message-body")
-        body_div.innerHTML='<h5>' + this['group_name'] + '</h5><p class="text-muted">UserQ: hi</p>'
+        body_div.innerHTML='<h5>' + this['group_name'] + '</h5>'
         msg_div.appendChild(body_div)
 
         let edit_div = document.createElement("div")
@@ -1083,7 +1083,7 @@ function postFormatter(response) {
     let diff = end.diff(start, ['days', 'hours', 'minutes']).toObject()
 
     let result = '<div class="feed"><div class="head"><div class="user"><div class="profile-photo">'
-        + '<img src="./images/profile-' + response.user + '.jpg"></div><div class="ingo">'
+        + '<img src="' + response.picture + '"></div><div class="ingo">'
         + '<h3>' + response.firstname + ' ' + response.lastname + '</h3>'
         + '<small>' + response.city + ', ' + dateDiffFormatter(diff) + '</small>'
         + '</div></div><div class="edit">'
@@ -1119,7 +1119,7 @@ function postWithCommentsFormatter(response) {
     let diff = end.diff(start, ['days', 'hours', 'minutes']).toObject()
 
     let result = '<div class="feed"><div class="head"><div class="user"><div class="profile-photo">'
-        + '<img src="./images/profile-' + post.user + '.jpg"></div><div class="ingo">'
+        + '<img src="' + post.picture + '"></div><div class="ingo">'
         + '<h3>' + post.firstname + ' ' + post.lastname + '</h3>' + button
 
         + '<small>' + post.city + ', ' + dateDiffFormatter(diff) + '</small>'
@@ -1196,7 +1196,7 @@ function commentFormatter(comment){
 function followFormatter(follow){
     let result = '<div class="message" id="follower_' + follow.id + '" >' 
                 + '<div class="profile-photo">'
-                + '<img src="./images/profile-2.jpg">'
+                + '<img src="' + follow.picture + '">'
                 + '</div>'
                 + '<div class="message-body">'
                 + '<h5>' + follow.firstname + ' ' + follow.lastname + '</h5>'

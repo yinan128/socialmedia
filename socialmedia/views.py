@@ -85,8 +85,12 @@ def get_posts_stat():
         locator = Nominatim(user_agent="google")
         location = locator.reverse(Point(post.latitude, post.longitude))
         address = location.raw["address"]
-        print(address)
-        combined_addr = f"{address['road']}, {address['neighbourhood']}, {address['city']}"
+        # print(address)
+        combined_addr = "unknown"
+        try:
+            combined_addr = f"{address['road']}, {address['neighbourhood']}, {address['city']}"
+        except:
+            pass
         if combined_addr in posts_stat:
             posts_stat[combined_addr] += 1
         else:
@@ -131,6 +135,7 @@ def get_stat(request):
     response_json = json.dumps(context)
     response = HttpResponse(response_json, content_type='application/json')
     response['Access-Control-Allow-Origin'] = '*'
+    print(response)
     return response
 
 
@@ -200,11 +205,21 @@ def get_follows(request):
     user = request.user
     following = user.profile.following.all() 
 
-    for follow in following: 
+    print (Profile.objects.all())
+
+    for follow in following:
+        # print(follow.id)
+        picture = None
+        try:
+            profile = Profile.objects.get(user=follow.id)
+            picture = profile.picture
+        except:
+            pass
         my_follow = {
             'firstname': follow.first_name,
             'lastname': follow.last_name,
-            'id': follow.id
+            'id': follow.id,
+            'picture': picture
         }
         response_data.append(my_follow)
 
@@ -285,6 +300,8 @@ def get_posts(request):
         #city = location.raw['address']['city']
         post_as_whole = {}
         is_follow = '1' if post.user in following else '0'
+        profile = Profile.objects.get(user=post.user.id)
+        picture = profile.picture
         my_post = {
             'type': 'post',
             'id': post.id,
@@ -298,11 +315,14 @@ def get_posts(request):
             'latitude': post.latitude,
             'city': post.city,
             'mine': (post.user == request.user),
-            'follow': is_follow
+            'follow': is_follow,
+            'picture': picture,
         }
         comments = post.comment.all().order_by("time")
         comment_list = []
         for comment in comments:
+            profile = Profile.objects.get(user=comment.user.id)
+            picture = profile.picture
             my_comment = {
                 'type': 'comment',
                 'id': comment.id,
@@ -310,7 +330,8 @@ def get_posts(request):
                 'firstname': comment.user.first_name,
                 'lastname': comment.user.last_name,
                 'text': comment.text,
-                'created_time': comment.time.isoformat()
+                'created_time': comment.time.isoformat(),
+                'picture': picture
             }
             comment_list.append(my_comment)
         post_as_whole['post'] = my_post
