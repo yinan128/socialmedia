@@ -358,7 +358,7 @@ function switchToFollowChannel() {
         '<div id="editor"><script>let editor</script></div>' +
         '<input type="submit" value="Post" class="btn btn-primary btn-floatright" onclick="postAction()">' +
         '</div>' +
-        '<div class="feeds" id="followFeeds"></div>'
+        '<div class="feeds" id="allFeeds"></div>'
 
     ClassicEditor
         .create( document.querySelector( '#editor' ))
@@ -372,84 +372,12 @@ function switchToFollowChannel() {
     $.ajax({
         url: "/socialmedia/get-follow",
         type: "GET",
-        success: updateFollowPosts,
+        success: updateLocalPosts,
         error: updateError
     })
 
-    window.setInterval(updateFollowPosts, 5000);
+
 }
-
-function updateFollowPosts(response) {
-    $(response).each(function() {
-        if (this.type == "comment" || this == undefined) {
-            return
-        }
-        console.log(this)
-        let post_id = "id_post_div_"+this.post.id
-        if (document.getElementById(post_id) == null && document.getElementById("followFeeds") != null) {
-            $("#followFeeds").prepend(postWithCommentsFormatter(this))
-        }else{
-            comments = this.comments
-            father = document.getElementById("comments_post_div_" + this.post.id)
-            for (let i=0; i<comments.length; i+= 1){
-                if (document.getElementById("id_comment_div_"+comments[i].id) == null && document.getElementById("followFeeds") != null){
-                    $("#comments_post_div_"+this.post.id).prepend(commentFormatter(comments[i]))
-                }
-            }
-        }
-    })
-}
-
-function updatePosts(response) {
-    // todo: clean deleted posts.
-    // new post found.
-    console.log(response)
-    $(response).each(function() {
-        console.log(this)
-        if('post_id' in this) {
-            let post_div_id = "#id_post_div_"+this['post_id']
-            if( $(post_div_id) != null) {
-                let feed_div = $(post_div_id).parentsUntil(".feeds", ".feed")[0]
-                feed_div.remove()
-                return
-            }
-        }
-        if (this.type == "comment") {
-            return
-        }
-        let post_id = "id_post_div_"+this.id
-        if (document.getElementById(post_id) == null) {
-            $("#allFeeds").prepend(postFormatter(this))
-        }else{
-            comments = this.comments
-            father = document.getElementById("comments_post_div_" + this.post.id)
-            for (let i=0; i<comments.length; i+= 1){
-                if (document.getElementById("id_comment_div_"+comments[i].id) == null && document.getElementById("followFeeds") != null){
-                    $("#comments_post_div_"+this.post.id).prepend(commentFormatter(comments[i]))
-                }
-            }
-        }
-    })
-
-    // update edit button with onclick function
-    var edit_btns = document.getElementsByClassName("uil-ellipsis-h")
-    for( var i=0; i<edit_btns.length; i++ ) {
-        edit_btns[i].addEventListener('click', show_edit_dropdown)
-    }
-
-    var edit_vis = document.getElementsByClassName("set-visib")
-    for( var i=0; i<edit_vis.length; i++ ) {
-        edit_vis[i].addEventListener('click', show_edit_visibility)
-    }
-
-
-    var delete_btns = document.getElementsByClassName("delete-post")
-    for( var i=0; i<delete_btns.length; i++ ) {
-        delete_btns[i].addEventListener('click', delete_post)
-    }
-}
-
-
 
 
 function switchToLocalStream() {
@@ -519,7 +447,6 @@ function updateLocalPosts(response) {
     })
 
     // remove the deleted posts along with their comments.
-    console.log(postIdFromResponse)
     let removeList = []
     for (let i = 0; i < document.getElementsByClassName("feed").length; i++) {
         let feed = document.getElementsByClassName("feed")[i]
@@ -587,7 +514,6 @@ function updatefig1(response) {
 
     var option;
 
-    console.log(response)
 
     var github_cnt = response.users_dis.github;
     var google_cnt = response.users_dis.google;
@@ -647,7 +573,6 @@ function updatefig2(response) {
 
     var data = response.posts_dis;
     data = JSON.parse(data.replace(/&quot;/g,'"'));
-    console.log(data)
 
     option = {
       tooltip: {
@@ -790,7 +715,6 @@ function updateMap(response) {
 function postAction() {
     let post_body = editor.getData()
     editor.setData('')
-    console.log(currPage)
 
     $.ajax({
         url: "/socialmedia/post",
@@ -837,7 +761,6 @@ function delete_post() {
     var feed_div = $(this).parentsUntil(".feeds", ".feed")[0]
     var text_div = feed_div.getElementsByClassName("text")[0]
     var post_id = text_div.id.split("_").at(-1)
-    console.log(post_id)
     $.ajax({
         url: "/socialmedia/delete-post",
         datatype: "json",
@@ -891,13 +814,11 @@ function update_groups_options(groups) {
 
 function edit_post_vis() {
     post_id = parseInt(document.getElementById("post_vis_id").value)
-    console.log("post id is "+post_id)
     $.ajax({
         url: "/socialmedia/set-visibility",
         datatype: "json",
         success: function() {
             overlay_off();
-            // updatePosts();
         },
         error: function() {
             overlay_off();
@@ -919,7 +840,6 @@ function update_vis_form(response, groups) {
             hide_group_ids.push(groups[j]['group_id'])
         }
     }
-    console.log(hide_group_ids)
     for(var i=0; i<response.length; i++) {
         gid = response[i]['group_id']
         gname = response[i]['group_name']
@@ -943,7 +863,6 @@ function update_vis_form(response, groups) {
 function overlay_on(post_id, response) {
     document.getElementById("visibility-overlay").style.display = "block"
     document.getElementById("post_vis_id").value=post_id
-    console.log(response)
     if(response[0]['visibility'] == "Private") {
         document.getElementById("public_vis").checked=false;
         document.getElementById("group_vis").checked=false;
@@ -984,12 +903,10 @@ function get_users_list() {
 
 function add_users_list(response) {
     document.getElementById("add-group-overlay").style.display = "block"
-    console.log(response)
     form = document.getElementById("form-details")
     form.innerHTML = ""
     for (var i=0; i<response.length; i++) {
         var user = response[i]
-        console.log(user)
         var user_check = document.createElement("input")
         user_check.setAttribute("type", "checkbox")
         user_check.setAttribute("id", "user_check_"+user['user_id'])
@@ -1020,7 +937,6 @@ function add_group() {
         datatype: "json",
         success: function() {
             overlay_off();
-            // updatePosts();
         },
         error: function() {
             overlay_off();
@@ -1035,15 +951,12 @@ function show_add_group_overlay() {
 }
 
 function update_group_list(response) {
-    // document.getElementById("group-content").innerHTML = ""
-    // console.log(response)
     let clear = document.getElementById("group-content").getElementsByClassName("message")
     $(clear).each(function() {
         this.remove()
     })
     
     $(response).each(function() {
-        console.log(this)
         let msg_div = document.createElement("div")
         msg_div.setAttribute("class", "message")
         msg_div.setAttribute("id", "group_msg_"+this['group_id'])
@@ -1069,10 +982,8 @@ function update_group_list(response) {
 }
 
 function get_edit_group_info(event) {
-    console.log(event.target)
     msg_div = $(event.target).parentsUntil("#group-content", ".message")[0]
     group_id = msg_div.id.split("_")[2]
-    console.log(group_id)
     $.ajax({
         url: "/socialmedia/get-group",
         datatype: "json",
@@ -1092,7 +1003,6 @@ function show_group_edit_form(response) {
     edit_form.innerHTML = ""
     group_users = []
     $(response).each(function() {
-        // console.log(this)
         let hid_group_id = document.createElement("input")
         hid_group_id.setAttribute("type", "hidden")
         hid_group_id.setAttribute("name", "group_id")
@@ -1113,7 +1023,7 @@ function show_group_edit_form(response) {
             group_users.push(parseInt(this['user_id']))
         })
 
-        // console.log(group_users)
+
         $.ajax({
             url: '/socialmedia/users-list',
             datatype: 'json',
@@ -1153,7 +1063,6 @@ function edit_group() {
     $.ajax({
         url: 'socialmedia/edit-group',
         method: 'POST',
-        // success: updatePosts,
         error: updateError
     })
 
@@ -1224,7 +1133,6 @@ function postWithCommentsFormatter(response) {
 
     for (let i = 0; i<comments.length; i += 1){
         let comment = comments[i]
-        console.log(comment.text)
         let comment_result = '<div class="text" id="id_comment_div_' + comment.id + '">' + comment.text +
         '<h3>' + comment.firstname + ' ' + comment.lastname + '</h3></div>'
         result += comment_result
@@ -1275,7 +1183,6 @@ function dateDiffFormatter(diff) {
 }
 
 function commentFormatter(comment){
-    console.log(comment)
     let result = '<div class="text" id="id_comment_div_' + comment.id + '">' + comment.text +
     '<h3>' + comment.firstname + ' ' + comment.lastname + '</h3></div>'
     return result
@@ -1371,6 +1278,8 @@ function refresh() {
         refreshLocalPosts()
     } else if (currPage == "localNews") {
         refreshLocalNews()
+    } else if (currPage == "followChannel") {
+        refreshFollowStream()
     }
 }
 
@@ -1409,6 +1318,15 @@ function refreshLocalNews() {
     })
 }
 
+function refreshFollowStream() {
+    $.ajax({
+        url: "/socialmedia/get-follow",
+        type: "GET",
+        success: updateLocalPosts,
+        error: updateError
+    })
+}
+
 function follow(id){
     let buttons = document.getElementsByClassName('follow_'+id)
     for (let i=0; i<buttons.length; i++){
@@ -1424,8 +1342,6 @@ function follow(id){
 }
 
 function unfollow(id){
-    console.log("unfollow id")
-    console.log(id)
     let buttons = document.getElementsByClassName('follow_'+id)
     for (let i=0; i<buttons.length; i++){
         let button = buttons[i]

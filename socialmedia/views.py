@@ -21,8 +21,6 @@ def update_user_social_data(strategy, *args, **kwargs):
 
         if response['picture']:
             url = response['picture']
-            print("I really go here")
-            print(url)
             try:
                 userProfile_obj = Profile.objects.get(user=user)
             except Profile.DoesNotExist:
@@ -45,10 +43,8 @@ def add_profile(user):
         userProfile_obj.user = user
 
         if user.socialaccount_set.filter(provider='google'):
-            print(SocialAccount.objects.get(user=user).extra_data['picture'])
             userProfile_obj.picture = SocialAccount.objects.get(user=user).extra_data['picture']
         else:
-            print(user.socialaccount_set.filter(provider='github')[0])
             userProfile_obj.picture = SocialAccount.objects.get(user=user).extra_data['avatar_url']
             
         userProfile_obj.save()
@@ -56,13 +52,8 @@ def add_profile(user):
 # Create your views here.
 @login_required()
 def global_stream(request):
-    print(request.user.username)
-    print(request.user.first_name)
-    print(request.user.last_name)
     add_profile(request.user)
-    # print(request.user)
     user = Profile.objects.get(user=request.user)
-    # print(user.picture)
     context = {
         'first_name': request.user.first_name,
         'last_name': request.user.last_name,
@@ -78,7 +69,6 @@ def login_action(request):
 
 
 def get_users_stat(request):
-    print(SocialAccount.objects.filter(provider='github'))
     github_users_count = SocialAccount.objects.filter(provider='github').count()
     google_users_count = SocialAccount.objects.filter(provider='google').count()
     users_dis = {
@@ -96,7 +86,6 @@ def get_posts_stat():
         location = locator.reverse(Point(post.latitude, post.longitude))
         address = location.raw["address"]
         combined_addr = f"{address['road']}, {address['neighbourhood']}, {address['city']}"
-        print(combined_addr)
         if combined_addr in posts_stat:
             posts_stat[combined_addr] += 1
         else:
@@ -172,8 +161,6 @@ def post_action(request):
         city = city,
         visibility = request.POST['visibility'],
     )
-    print(post.longitude)
-    print(post.latitude)
     post.save()
     if request.POST['page'] == "globalChannel":
         return get_posts(request)
@@ -186,12 +173,10 @@ def add_comment(request):
     if not request.user.id or not request.user.is_authenticated or 'comment_text' in request.POST and request.POST['comment_text'].startswith("Comment from not logged-in user"):
         return HttpResponse({"error": 'not logged in'}, content_type='application/json', status=401)
     if 'post_id' not in request.POST or 'comment_text' not in request.POST or request.POST['comment_text'] == '' or request.POST['post_id'] == '' or request.POST['comment_text'].startswith("invalid post_id"):
-        print("returned by me!")
         return HttpResponse({"error": 'bad parameters'}, content_type='application/json', status=400)
     if request.POST['comment_text'].startswith("large post_id"):
         return HttpResponse({"error": 'bad parameters'}, content_type='application/json', status=400)
     if 'csrfmiddlewaretoken' not in request.POST or request.POST['csrfmiddlewaretoken'] == '' or not request.POST['csrfmiddlewaretoken']:
-        print('now returned by me!')
         return HttpResponse({"error": 'Missing token'}, content_type='application/json', status=400)
 
     new_comment = Comment(text=request.POST['comment_text'], user=request.user, time=timezone.now())
@@ -227,7 +212,6 @@ def get_follows(request):
     return response
 
 def get_follow(request):
-    print('enter follow!')
     response_data = []
     user = request.user
     following = user.profile.following.all()
@@ -247,7 +231,8 @@ def get_follow(request):
             'longitude': post.longitude,
             'latitude': post.latitude,
             'city': post.city,
-            'follow': '1'
+            'follow': '1',
+            'mine': (request.user == post.user)
         }
         comments = post.comment.all().order_by("time")
         comment_list = []
@@ -264,12 +249,25 @@ def get_follow(request):
             comment_list.append(my_comment)
         post_as_whole['post'] = my_post
         post_as_whole['comments'] = comment_list
-        response_data.append(post_as_whole)
+
+        # Check post visibility
+        if (post.visibility == "Public" or my_post['mine']):
+            response_data.append(post_as_whole)
+
+        elif (post.visibility == "Private" and post.user == request.user):
+            response_data.append(post_as_whole)
+
+        elif (post.visibility == "Group"):
+            found = False
+            for group in post.hide_groups.all():
+                if request.user in group.users.all():
+                    found = True
+            if not found:
+                response_data.append(post_as_whole)
 
     response_json = json.dumps(response_data)
     response = HttpResponse(response_json, content_type='application/json')
     response['Access-Control-Allow-Origin'] = '*'
-    # print(response_data)
     return response
 
 
@@ -495,15 +493,11 @@ def get_local(request, longitude, latitude):
 
 # Set post visibility (post_id and visibility given in request)
 def set_post_visibility(request):
-    print("inside set_post_visibility")
-    for key,value in request.POST.items():
-        print("{} {}".format(key,value))
     pid = request.POST['post_id']
     post = get_object_or_404(Post, id=pid)
 
     # Private
     if(request.POST['post_vis_option'] == "private"):
-        print("-----PRIVATE-----")
         post.visibility = "Private"
         for grp in Group.objects.all():
             post.hide_groups.add(get_object_or_404(Group, id=grp.id))
@@ -512,7 +506,6 @@ def set_post_visibility(request):
 
     # Public
     if(request.POST['post_vis_option'] == "public"):
-        print("-----Public-----")
         post.visibility = "Public"
         for grp in post.hide_groups.all():
             grp_obj = get_object_or_404(Group, id=grp.id)
@@ -521,7 +514,6 @@ def set_post_visibility(request):
         return redirect(reverse('global_stream'))
 
     # Group
-    print("-----Group-----")
     post.visibility = "Group"
     gid_keys = []
     for key,value in request.POST.items():
@@ -574,13 +566,11 @@ def get_post_visibility(request):
 def get_groups(request):
     groups = Group.objects.all()
     response_data = []
-    print(Group.objects.count())
     if( Group.objects.count() == 0):
         response_json = json.dumps(response_data)
         response = HttpResponse(response_json, content_type='application/json')
         response['Access-Control-Allow-Origin'] = '*'
         return response
-    print(groups)
     for group in groups:
         users_list = []
         for user in group.users.all():
@@ -620,7 +610,6 @@ def get_group(request):
         'group_name': group.name,
         'group_users': users_list
     }
-    print(group_info)
     response_data.append(group_info)
     response_json = json.dumps(response_data)
     response = HttpResponse(response_json, content_type='application/json')
@@ -643,15 +632,12 @@ def users_list_action(request):
     return response
 
 def add_group_action(request):
-    # print("inside set_post_visibility")
-    # for key,value in request.POST.items():
-    #     print("{} {}".format(key,value))
+
     group = Group(name=request.POST['group-name'])
     group.save()
     users = []
     for key,value in request.POST.items():
         if key.startswith("user_"):
-            print(value)
             group.users.add(get_object_or_404(User, id=int(value)))
             
     group.save()
@@ -673,12 +659,10 @@ def delete_post_action(request):
 
 
 def edit_group_action(request):
-    print(request)
     group = get_object_or_404(Group, id=int(request.POST['group_id']))
     group.users.clear()
     for key,value in request.POST.items():
         if key.startswith("user_ckbx"):
-            print(value)
             user = get_object_or_404(User, id=int(value))
             group.users.add(user)
 
