@@ -1113,9 +1113,9 @@ function postWithCommentsFormatter(response) {
     let comments = response.comments
     let button;
     if (post.follow == '1'){
-        button = '<div class="follow_' + post.userid + '"><button class="btn_small" onClick="unfollow(' + post.userid + ')">Unfollow</button></div>'
+        button = '<div  style="display:inline-block; margin-left: 10px;" class="follow_' + post.userid + '"><button class="btn_small" onClick="unfollow(' + post.userid + ')">Unfollow</button></div>'
     }else{
-        button = '<div class="follow_' + post.userid + '"><button class="btn_small" onClick="follow(' + post.userid + ')">Follow</button></div>'
+        button = '<div  style="display:inline-block; margin-left: 10px;" class="follow_' + post.userid + '"><button class="btn_small" onClick="follow(' + post.userid + ')">Follow</button></div>'
     }
     let start = luxon.DateTime.fromJSDate(new Date(post.created_time))
     let end = luxon.DateTime.fromJSDate(new Date())
@@ -1123,10 +1123,10 @@ function postWithCommentsFormatter(response) {
 
     let result = '<div class="feed"><div class="head"><div class="user"><div class="profile-photo">'
         + '<img src="' + post.picture + '"></div><div class="ingo">'
-        + '<h3>' + post.firstname + ' ' + post.lastname + '</h3>' + button
+        + '<h3>' + post.firstname + ' ' + post.lastname + button + '</h3>' 
 
         + '<small>' + post.city + ', ' + dateDiffFormatter(diff) + '</small>'
-        + '</div></div><div class="edit">'
+        + '</div></div><div class="edit">' 
 
         if(post['mine']) {
             result += '<button class="uil uil-ellipsis-h"></button>'
@@ -1141,8 +1141,8 @@ function postWithCommentsFormatter(response) {
 
     for (let i = 0; i<comments.length; i += 1){
         let comment = comments[i]
-        let comment_result = '<div class="text" id="id_comment_div_' + comment.id + '">' + comment.text +
-        '<h3>' + comment.firstname + ' ' + comment.lastname + '</h3></div>'
+        let comment_result = '<div class="text" id="id_comment_div_' + comment.id + '"><small class="comments text-muted" style="color:grey;">' + comment.firstname + ' ' + comment.lastname + ':   </small>' + comment.text +
+        '</div>'
         result += comment_result
     }
 
@@ -1191,8 +1191,10 @@ function dateDiffFormatter(diff) {
 }
 
 function commentFormatter(comment){
-    let result = '<div class="text" id="id_comment_div_' + comment.id + '">' + comment.text +
-    '<h3>' + comment.firstname + ' ' + comment.lastname + '</h3></div>'
+    //let result = '<div class="text" id="id_comment_div_' + comment.id + '">' + comment.text +
+    //'<h3>' + comment.firstname + ' ' + comment.lastname + '</h3></div>'
+    let result = '<div class="text" id="id_comment_div_' + comment.id + '"><small class="comments text-muted" style="color:grey;">' + comment.firstname + ' ' + comment.lastname + ':   </small>' + comment.text +
+        '</div>'
     return result
 }
 

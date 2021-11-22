@@ -56,8 +56,8 @@ body {
 }
 
 .profile-photo {
-  width: 2.7rem;
-  aspect-ratio: 1/1;
+  width: 2.7rem !important;
+  aspect-ratio: 1/1 !important;
   border-radius: 50%;
   overflow: hidden;
 }
@@ -256,6 +256,7 @@ main .container .left .profile {
   padding: 0 0;
   border-radius:2rem;
   border: 2px;
+  margin-left: 2px;
   background-color: hsl(252, 75%, 60%);
   color: white;
 }

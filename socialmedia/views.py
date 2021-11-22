@@ -670,6 +670,8 @@ def add_group_action(request):
             group.users.add(get_object_or_404(User, id=int(value)))
             
     group.save()
+    request.user.profile.groups.add(group)
+
 
     return redirect(reverse('global_stream'))
 
