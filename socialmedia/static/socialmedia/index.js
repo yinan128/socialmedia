@@ -710,9 +710,16 @@ function postFormatter(response) {
 function postWithCommentsFormatter(response) {
     let post = response.post
     let comments = response.comments
+    let button;
+    if (post.follow == '1'){
+        button = '<div class="follow_' + post.userid + '"><button onClick="unfollow(' + post.userid + ')">Unfollow</button></div>'
+    }else{
+        button = '<div class="follow_' + post.userid + '"><button onClick="follow(' + post.userid + ')">Follow</button></div>'
+    }
+
     let result = '<div class="feed"><div class="head"><div class="user"><div class="profile-photo">'
         + '<img src="./images/profile-' + post.user + '.jpg"></div><div class="ingo">'
-        + '<h3>' + post.firstname + ' ' + post.lastname + '</h3>'
+        + '<h3>' + post.firstname + ' ' + post.lastname + '</h3>' + button
         + '<small>' + post.city + ', 15 MINUTES AGO</small>'
         + '</div></div><span class="edit"><i class="uil uil-ellipsis-h"></i></span></div>'
         + '<div class="text" id="id_post_div_' + post.id + '">' + post.text + '</div>'
@@ -873,4 +880,31 @@ function getPosts() {
     })
 }
 
+function follow(id){
+    let buttons = document.getElementsByClassName('follow_'+id)
+    for (let i=0; i<buttons.length; i++){
+        let button = buttons[i]
+        button.innerHTML = '<span>Followed</span>'
+    }
+    $.ajax({
+        url: "/socialmedia/follow/"+id + "/",
+        datatype: "json",
+        success: function(){},
+        error: updateError
+    })
+}
+
+function unfollow(id){
+    let buttons = document.getElementsByClassName('follow_'+id)
+    for (let i=0; i<buttons.length; i++){
+        let button = buttons[i]
+        button.innerHTML = '<span>Unfollowed</span>'
+    }
+    $.ajax({
+        url: "/socialmedia/unfollow/"+id+"/",
+        datatype: "json",
+        success: function(){},
+        error: updateError
+    })
+}
 // END

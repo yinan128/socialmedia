@@ -1,5 +1,5 @@
 from django.http import HttpResponse
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse
 from django.utils import timezone
@@ -217,9 +217,6 @@ def get_follows(request):
         }
         response_data.append(my_follow)
 
-    print('entter follows')
-    print(response_data)
-
     response_json = json.dumps(response_data)
     response = HttpResponse(response_json, content_type='application/json')
     response['Access-Control-Allow-Origin'] = '*'
@@ -355,6 +352,26 @@ def get_news(request):
     response['Access-Control-Allow-Origin'] = '*'
     return response
 
+def follow(request, id):
+    profile = request.user.profile
+    curr_id = get_object_or_404(User, id=id)
+    profile.following.add(curr_id)
+    profile.save()
+
+    response = HttpResponse(json.dumps([]), content_type='application/json')
+    response['Access-Control-Allow-Origin'] = '*'
+    return response
+
+def unfollow(request, id):
+    profile = request.user.profile
+    curr_id = get_object_or_404(User, id=id)
+    profile.following.remove(curr_id)
+    profile.save()
+    
+    response = HttpResponse(json.dumps([]), content_type='application/json')
+    response['Access-Control-Allow-Origin'] = '*'
+    return response
+
 def get_local(request, longitude, latitude):
     response_data = []
     longitude = str(float(longitude) / 10000)
@@ -363,20 +380,24 @@ def get_local(request, longitude, latitude):
     location = geolocator.reverse(latitude+","+longitude)
     city = location.raw['address']['city']
     posts = Post.objects.filter(city__in=[city]).order_by("time")
+    following = request.user.profile.following.all()
 
     for post in posts:
         post_as_whole = {}
+        is_follow = '1' if post.user in following else '0'
         my_post = {
             'type': 'post',
             'id': post.id,
             'user': post.user.username,
+            'userid': post.user.id,
             'firstname': post.user.first_name,
             'lastname': post.user.last_name,
             'text': post.text,
             'created_time': post.time.isoformat(),
             'longitude': post.longitude,
             'latitude': post.latitude,
-            'city': post.city
+            'city': post.city,
+            'follow': is_follow
         }
         comments = post.comment.all().order_by("time")
         comment_list = []

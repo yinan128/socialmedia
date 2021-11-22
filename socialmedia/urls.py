@@ -12,6 +12,8 @@ urlpatterns = [
     path('get-local-news', views.get_news),
     path('addPost', views.addPost, name='newPost'),
     path('get-local/<str:longitude>/<str:latitude>/', views.get_local),
+    path('follow/<str:id>/', views.follow),
+    path('unfollow/<str:id>/', views.unfollow),
     path('add-comment', views.add_comment),
     path('stat', views.get_stat, name='stat')
 ]
