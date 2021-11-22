@@ -1110,9 +1110,9 @@ function postWithCommentsFormatter(response) {
     let comments = response.comments
     let button;
     if (post.follow == '1'){
-        button = '<div class="follow_' + post.userid + '"><button onClick="unfollow(' + post.userid + ')">Unfollow</button></div>'
+        button = '<div class="follow_' + post.userid + '"><button class="btn_small" onClick="unfollow(' + post.userid + ')">Unfollow</button></div>'
     }else{
-        button = '<div class="follow_' + post.userid + '"><button onClick="follow(' + post.userid + ')">Follow</button></div>'
+        button = '<div class="follow_' + post.userid + '"><button class="btn_small" onClick="follow(' + post.userid + ')">Follow</button></div>'
     }
     let start = luxon.DateTime.fromJSDate(new Date(post.created_time))
     let end = luxon.DateTime.fromJSDate(new Date())
@@ -1133,9 +1133,6 @@ function postWithCommentsFormatter(response) {
         + '<a class="set-visib">Visibility</a></div> </div></div>'
         + '<div class="text" id="id_post_div_' + post.id + '">' + post.text + '</div>'
 
-        + '<div class="action-buttons"><div class="interaction-buttons"><span><i class="uil uil-heart"></i></span><span><i class="uil uil-comment-dots"></i></span><span><i class="uil uil-share-alt"></i></span></div><div class="bookmark"><span><i class="uil uil-bookmark-full"></i></span></div></div>'
-        + '<div class="liked-by"><span><img src="./images/profile-10.jpg"></span><span><img src="./images/profile-4.jpg"></span><span><img src="./images/profile-15.jpg"></span><p>Liked by <b>UserC</b> and <b>4 others</b></p></div>'
-
         + '<div id="comment_display_' + post.id + '" class="comments text-muted" onclick="displayComments(' + post.id + ')">View all ' + comments.length + ' comments</div>'
         + '<div id="comments_post_div_' + post.id + '" style="display:none">'
 
@@ -1146,8 +1143,8 @@ function postWithCommentsFormatter(response) {
         result += comment_result
     }
 
-    result += '</div><input type="text" name="new_comment" id="id_comment_input_text_' + post.id + '">' +
-    '<button id="id_comment_button_' + post.id + '" onclick="addComment(' + post.id + ')">Add Comment</button></div>'
+    result += '</div><input style="border:1px solid #a1a1a1;" type="text" name="new_comment" id="id_comment_input_text_' + post.id + '">' +
+    '<button id="id_comment_button_' + post.id + '" onclick="addComment(' + post.id + ')">Comment</button></div>'
 
     return result
 }
@@ -1280,7 +1277,7 @@ function getFollow() {
 
 // called by intervals.
 function refresh() {
-    getFollow()
+    //getFollow()
     if (currPage == "globalChannel") {
         refreshGlobalPosts()
     } else if (currPage == "localStream") {

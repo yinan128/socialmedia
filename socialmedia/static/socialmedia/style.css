@@ -84,6 +84,7 @@ img {
 .btn-primary {
   background: var(--color-primary);
   color: white;
+
 }
 
 .btn-floatright {
@@ -245,6 +246,18 @@ main .container .left .profile {
   width: 100%;
   text-align: center;
   padding: 1rem 0;
+  border-radius: 10rem;
+}
+
+.btn_small {
+  text-align: center;
+  width: 80px;
+  height: 20%;
+  padding: 0 0;
+  border-radius:2rem;
+  border: 2px;
+  background-color: hsl(252, 75%, 60%);
+  color: white;
 }
 
 /* ----------------------- NOTIFICATION POPUP ---------------- */

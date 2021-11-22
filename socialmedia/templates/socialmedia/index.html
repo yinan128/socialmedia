@@ -77,76 +77,10 @@
                     <a class="menu-item" onclick="switchToMapit()" id="mapitChannel">
                         <span><i class="uil uil-compass"></i></span><h3>Map it</h3>
                     </a>
-                    <a class="menu-item" id="notifications">
-                        <span><i class="uil uil-bell"><small class="notification-count">9+</small></i></span><h3>Notifications</h3>
-                        <!-------------------- NOTIFICATION POPUP ---------------->
-                        <div class="notifications-popup">
-                            <div>
-                                <div class="profile-photo">
-                                    <img src="./images/profile-2.jpg">
-                                </div>
-                                <div class="notification-body">
-                                    <b>UserK</b> accepted your friend request
-                                    <small class="text-muted">2 DAYS AGO</small>
-                                </div>
-                            </div>
-                            <div>
-                                <div class="profile-photo">
-                                    <img src="./images/profile-3.jpg">
-                                </div>
-                                <div class="notification-body">
-                                    <b>UserC</b> commented on your post
-                                    <small class="text-muted">1 HOUR AGO</small>
-                                </div>
-                            </div>
-                            <div>
-                                <div class="profile-photo">
-                                    <img src="./images/profile-4.jpg">
-                                </div>
-                                <div class="notification-body">
-                                    <b>UserA</b> and <b>283 others </b> liked your post
-                                    <small class="text-muted">4 MINUTES AGO</small>
-                                </div>
-                            </div>
-                            <div>
-                                <div class="profile-photo">
-                                    <img src="./images/profile-5.jpg">
-                                </div>
-                                <div class="notification-body">
-                                    <b>UserD</b> commented on a post you are tagged in
-                                    <small class="text-muted">2 DAYS AGO</small>
-                                </div>
-                            </div>
-                            <div>
-                                <div class="profile-photo">
-                                    <img src="./images/profile-6.jpg">
-                                </div>
-                                <div class="notification-body">
-                                    <b>UserW</b> commented on a post you are tagged in
-                                    <small class="text-muted">1 HOUR AGO</small>
-                                </div>
-                            </div>
-                            <div>
-                                <div class="profile-photo">
-                                    <img src="./images/profile-7.jpg">
-                                </div>
-                                <div class="notification-body">
-                                    <b>UserP</b> commented on your post
-                                    <small class="text-muted">1 HOUR AGO</small>
-                                </div>
-                            </div>
-                        </div>
-                        <!-------------------- END NOTIFICATION POPUP ---------------->
-                    </a>
-                    <a class="menu-item">
-                        <span><i class="uil uil-bookmark"></i></span><h3>Bookmarks</h3>
-                    </a>
+                    
                     <a class="menu-item" id="statistics" onclick="switchToStat()">
                         <span><i class="uil uil-chart-line"></i></span><h3>Analytics</h3>
-                    </a>
-                    <a class="menu-item">
-                        <span><i class="uil uil-setting"></i></span><h3>Settings</h3>
-                    </a>                        
+                    </a>                      
                 </div>
                 <!------------------- END OF SIDEBAR -------------------->
                 <label for="create-post" class="btn btn-primary" onclick="focusToPostInput()">Create Post</label>
@@ -215,11 +149,7 @@
                     <div class="heading">
                         <h4>Connections</h4>
                     </div>
-                    <!------------ SEARCH BAR -------------->
-                    <div class="search-bar">
-                        <i class="uil uil-search"></i>
-                        <input type="search" placeholder="Search" id="message-search">
-                    </div>
+                    
                     <!------------ MESSAGES CATEGORY -------------->
                     <div class="category">
                         <h6 id="following-tab" class="active">Following</h6>
@@ -263,60 +193,6 @@
                     
                 </div>
                 <!------------ END OF MESSAGES -------------->
-
-
-                <!------------ FRIEND REQUESTS -------------->
-                <div class="friend-requests">
-                    <h4>Requests</h4>
-                    <!----- REQUEST 1----->
-                    <div class="request">
-                        <div class="info">
-                            <div class="profile-photo">
-                                <img src="./images/profile-3.jpg">
-                            </div>
-                            <div>
-                                <h5>UserH</h5>
-                                <p class="text-muted">8 mutual friends</p>
-                            </div>
-                        </div>
-                        <div class="action">
-                            <button class="btn btn-primary">Accept</button>
-                            <button class="btn">Agree</button>
-                        </div>
-                    </div>
-                    <!----- REQUEST 2----->
-                    <div class="request">
-                        <div class="info">
-                            <div class="profile-photo">
-                                <img src="./images/profile-3.jpg">
-                            </div>
-                            <div>
-                                <h5>UserJ</h5>
-                                <p class="text-muted">2 mutual friends</p>
-                            </div>
-                        </div>
-                        <div class="action">
-                            <button class="btn btn-primary">Accept</button>
-                            <button class="btn">Agree</button>
-                        </div>
-                    </div>
-                    <!----- REQUEST 3----->
-                    <div class="request">
-                        <div class="info">
-                            <div class="profile-photo">
-                                <img src="./images/profile-3.jpg">
-                            </div>
-                            <div>
-                                <h5>UserL</h5>
-                                <p class="text-muted">9 mutual friends</p>
-                            </div>
-                        </div>
-                        <div class="action">
-                            <button class="btn btn-primary">Accept</button>
-                            <button class="btn">Agree</button>
-                        </div>
-                    </div>
-                </div>
                 </div>
             </div>
             <!--====================== END OF RIGHT ==========================-->
@@ -385,7 +261,7 @@
     window.onload = onloadEvents;
     //... also call getList every 3 seconds hereafter to update the list
     window.setInterval(refresh, 7000);
-    window.setInterval(getFollow, 3000);
+    //window.setInterval(getFollow, 3000);
 
 </script>
 
