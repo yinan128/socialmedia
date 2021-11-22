@@ -987,7 +987,7 @@ function update_group_list(response) {
         msg_div.appendChild(body_div)
 
         let edit_div = document.createElement("div")
-        edit_div.setAttribute("class", "group-edit-div")
+        edit_div.setAttribute("class", "btn_tiny")
         edit_div.innerHTML='<button class="group-edit-btn" onclick="get_edit_group_info(event)">Edit</button>'
         msg_div.appendChild(edit_div)
 
@@ -1150,7 +1150,7 @@ function postWithCommentsFormatter(response) {
         result += comment_result
     }
 
-    result += '</div><input style="border:2px solid #a1a1a1; width: 200px;" type="text" name="new_comment" id="id_comment_input_text_' + post.id + '">' +
+    result += '</div><input style="border:4px solid #a1a1a1; width: 200px;" type="text" name="new_comment" id="id_comment_input_text_' + post.id + '">' +
     '<button class="btn_tiny" id="id_comment_button_' + post.id + '" onclick="addComment(' + post.id + ')">Comment</button></div>'
 
     return result

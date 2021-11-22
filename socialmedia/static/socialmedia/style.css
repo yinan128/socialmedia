@@ -81,6 +81,20 @@ img {
   font-size: 0.9rem;
 }
 
+.btn_middle {
+  display: inline-block;
+  padding: var(--btn-padding);
+  font-weight: 300;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  transition: all 300ms ease;
+  font-size: 0.8rem;
+}
+
+.btn_middle:hover {
+  opacity: 0.8;
+}
+
 .btn:hover {
   opacity: 0.8;
 }
@@ -102,6 +116,7 @@ img {
 
 .text-muted {
   color: var(--color-gray);
+  cursor: pointer;
 }
 
 /*================== NAVBAR =================*/
@@ -256,24 +271,31 @@ main .container .left .profile {
 .btn_small {
   text-align: center;
   width: 60px;
-  height: 30%;
+  height: 45%;
   padding: 0 0;
   border-radius:2rem;
   border: 2px;
   margin-left: 2px;
+  font-size: 0.9rem;
   background-color: hsl(252, 75%, 60%);
   color: white;
+  cursor: pointer;
 }
 
 .btn_tiny {
   text-align: center;
   width: 80px;
-  height: 30%;
+  height: 35%;
   padding: 0 0;
   border-radius:2rem;
   border: 2px solid hsl(252, 75%, 60%);
   background-color: hsl(0, 0%, 100%);
   margin-left: 2px;
+  cursor: pointer;
+}
+
+.btn_tiny:hover {
+  opacity: 0.8;
 }
 
 /* ----------------------- NOTIFICATION POPUP ---------------- */
@@ -584,6 +606,7 @@ main .container .right {
   display: flex;
   justify-content: space-between;
   margin-bottom: 1rem;
+  cursor: pointer;
 }
 
 .right .messages .category h6 {
@@ -638,8 +661,10 @@ main .container .right {
 }
 
 .group-edit-btn {
-  padding: 5px;
-  float: right;
+  padding: 0px;
+  float: center;
+  background-color: white;
+  cursor: pointer;
 }
 /* ================= FRIEND REQUESTS =================== */
 .right .friend-requests {
