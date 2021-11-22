@@ -82,15 +82,7 @@ def get_posts_stat():
     posts_stat = {}
     posts_date = {}
     for post in posts:
-        locator = Nominatim(user_agent="google")
-        location = locator.reverse(Point(post.latitude, post.longitude))
-        address = location.raw["address"]
-        # print(address)
-        combined_addr = "unknown"
-        try:
-            combined_addr = f"{address['road']}, {address['neighbourhood']}, {address['city']}"
-        except:
-            pass
+        combined_addr = post.combined_addr
         if combined_addr in posts_stat:
             posts_stat[combined_addr] += 1
         else:
@@ -107,8 +99,8 @@ def get_posts_stat():
 
 def get_stat(request):
     users_dis = get_users_stat(request)
-    user = Profile.objects.get(user=request.user)
     posts_stat, posts_date = get_posts_stat()
+    user = Profile.objects.get(user=request.user)
     posts_dis = []
     for key, value in posts_stat.items():
         posts_dis.append({'value': value, 'name': key})
@@ -135,7 +127,7 @@ def get_stat(request):
     response_json = json.dumps(context)
     response = HttpResponse(response_json, content_type='application/json')
     response['Access-Control-Allow-Origin'] = '*'
-    print(response)
+    print("end")
     return response
 
 
@@ -153,12 +145,24 @@ def post_action(request):
         return _my_json_error_response("Invalid post.", status=400)
 
 
-    geolocator = Nominatim(user_agent="geoapiExercises")
-    location = geolocator.reverse(request.POST['lat']+","+request.POST['long'])
-    city = location.raw['address']['city']
+    # geolocator = Nominatim(user_agent="geoapiExercises")
+    # location = geolocator.reverse(request.POST['lat']+","+request.POST['long'])
+    # city = location.raw['address']['city']
 
+    locator = Nominatim(user_agent="google")
+    location = locator.reverse(Point(request.POST['lat'], request.POST['long']))
+    address = location.raw["address"]
+    city = "unknown"
+    combined_addr = "unknown"
+    try:
+        city = address['city']
+    except:
+        pass
+    try:
+        combined_addr = f"{address['road']}, {address['neighbourhood']}, {address['city']}"
+    except:
+        pass
     post = Post(
-
         user=request.user,
         text=request.POST['text'],
         time=timezone.now(),
@@ -166,6 +170,7 @@ def post_action(request):
         longitude=request.POST['long'],
         city = city,
         visibility = request.POST['visibility'],
+        combined_addr = combined_addr
     )
     post.save()
     if request.POST['page'] == "globalChannel":

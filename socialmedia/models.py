@@ -31,6 +31,7 @@ class Post(models.Model):
     body = RichTextField(blank=True, null=True)
     visibility = models.CharField(max_length=10, default='Public')
     hide_groups = models.ManyToManyField(Group, default=None)
+    combined_addr = models.CharField(max_length=50)
 
 
 class Profile(models.Model):

@@ -647,7 +647,11 @@ function updatefig3(response) {
       series: [
         {
           data: num,
-          type: 'line'
+          type: 'bar',
+          showBackground: true,
+          backgroundStyle: {
+            color: 'rgba(180, 180, 180, 0.2)'
+          }
         }
       ]
     };
@@ -1146,8 +1150,8 @@ function postWithCommentsFormatter(response) {
         result += comment_result
     }
 
-    result += '</div><input style="border:1px solid #a1a1a1;" type="text" name="new_comment" id="id_comment_input_text_' + post.id + '">' +
-    '<button id="id_comment_button_' + post.id + '" onclick="addComment(' + post.id + ')">Comment</button></div>'
+    result += '</div><input style="border:2px solid #a1a1a1; width: 200px;" type="text" name="new_comment" id="id_comment_input_text_' + post.id + '">' +
+    '<button class="btn_tiny" id="id_comment_button_' + post.id + '" onclick="addComment(' + post.id + ')">Comment</button></div>'
 
     return result
 }

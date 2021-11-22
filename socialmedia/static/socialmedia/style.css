@@ -1,5 +1,9 @@
 @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap");
 
+h3 {
+  text-align: center;
+}
+
 :root {
   --primary-color-hue: 252;
   --dark-color-lightness: 17%;
@@ -251,14 +255,25 @@ main .container .left .profile {
 
 .btn_small {
   text-align: center;
-  width: 80px;
-  height: 20%;
+  width: 60px;
+  height: 30%;
   padding: 0 0;
   border-radius:2rem;
   border: 2px;
   margin-left: 2px;
   background-color: hsl(252, 75%, 60%);
   color: white;
+}
+
+.btn_tiny {
+  text-align: center;
+  width: 80px;
+  height: 30%;
+  padding: 0 0;
+  border-radius:2rem;
+  border: 2px solid hsl(252, 75%, 60%);
+  background-color: hsl(0, 0%, 100%);
+  margin-left: 2px;
 }
 
 /* ----------------------- NOTIFICATION POPUP ---------------- */
