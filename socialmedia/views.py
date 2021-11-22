@@ -85,6 +85,7 @@ def get_posts_stat():
         locator = Nominatim(user_agent="google")
         location = locator.reverse(Point(post.latitude, post.longitude))
         address = location.raw["address"]
+        print(address)
         combined_addr = f"{address['road']}, {address['neighbourhood']}, {address['city']}"
         if combined_addr in posts_stat:
             posts_stat[combined_addr] += 1

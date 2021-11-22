@@ -12,8 +12,6 @@ class Comment(models.Model):
     # parent_post = models.ForeignKey(Post)
     time = models.DateTimeField()
 
-
-
 class Group(models.Model):
     name = models.CharField(max_length=40, default="Default")
     users = models.ManyToManyField(User, related_name="users")
@@ -42,5 +40,5 @@ class Profile(models.Model):
     picture = models.TextField(null=True, blank=True)
     # blacklist = models.ManyToManyField(User)
     following = models.ManyToManyField(User, related_name='following')
-    groups = models.ManyToManyField(Group)
+    groups = models.ManyToManyField(Group, default=None)
 
