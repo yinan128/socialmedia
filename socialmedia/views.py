@@ -202,7 +202,8 @@ def get_follows(request):
     for follow in following: 
         my_follow = {
             'firstname': follow.first_name,
-            'lastname': follow.last_name
+            'lastname': follow.last_name,
+            'id': follow.id
         }
         response_data.append(my_follow)
 

@@ -416,8 +416,16 @@ function switchToLocalStream() {
 }
 
 function updateFollow(response){
+    console.log("entered update follow!")
+    let messages = document.getElementById("messages")
+    messages.innerHTML = ""
     $(response).each(function() {
-        $("#messages").prepend(followFormatter(this))
+        //console.log(response.id)
+        //console.log("follower_" + response.id)
+        if (document.getElementById("follower_" + this.id) == null){
+            $("#messages").prepend(followFormatter(this))
+        }
+        
     })
 }
 
@@ -1189,7 +1197,7 @@ function commentFormatter(comment){
 }
 
 function followFormatter(follow){
-    let result = '<div class="message">' 
+    let result = '<div class="message" id="follower_' + follow.id + '" >' 
                 + '<div class="profile-photo">'
                 + '<img src="./images/profile-2.jpg">'
                 + '</div>'
@@ -1272,6 +1280,7 @@ function getFollow() {
 
 // called by intervals.
 function refresh() {
+    getFollow()
     if (currPage == "globalChannel") {
         refreshGlobalPosts()
     } else if (currPage == "localStream") {
