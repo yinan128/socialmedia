@@ -1,5 +1,9 @@
 .DS_Store
 
+# venvs #
+my_env/*
+my_env_new/*
+
 # Django #
 *.log
 *.pot

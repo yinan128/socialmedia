@@ -149,7 +149,7 @@
                     </a>                        
                 </div>
                 <!------------------- END OF SIDEBAR -------------------->
-                <label for="create-post" class="btn btn-primary">Create Post</label>
+                <label for="create-post" class="btn btn-primary" onclick="focusToPostInput()">Create Post</label>
             </div>
             <!------------------- END OF LEFT -------------------->
 
@@ -182,89 +182,27 @@
 {#                    <input type="submit" value="Post" class="btn btn-primary" onclick="getLocation()">#}
                 </div>
 
+                <!------------------- Visibility Overlay --------------------->
+                <div id="visibility-overlay" class="center-overlay">
+                    <form id="visibility-form" method="POST" class="overlay-form" action="{% url 'visibility' %}">
+                        Set Post Visibility:<br>
+                        <input type="hidden" name="post_id" id="post_vis_id" value="0">
+
+                        <input type="radio" id="public_vis" name="post_vis_option" onclick="remove_groups_options()" value="public" checked>
+                        <label for="public_vis">Public</label><br>
+                        <input type="radio" id="private_vis" name="post_vis_option" value="private" onclick="remove_groups_options()">
+                        <label for="private_vis">Private</label><br>
+                        <input type="radio" id="group_vis" name="post_vis_option" onclick="update_groups_options()" value="group">
+                        <label for="group_vis">Group Invisible</label><br>
+
+                        <div id="select-groups">
+                        </div>
+                        <input type="submit" value="Confirm" onsubmit="edit_post_vis()"> 
+                        {% csrf_token %}
+                    </form>
+                </div>
                 <!------------------- FEEDS --------------------->
                 <div class="feeds" id="allFeeds">
-                    <!------------------- FEED 1 --------------------->
-                    <div class="feed">
-                        <div class="head">
-                            <div class="user">
-                                <div class="profile-photo">
-                                    <img src="./images/profile-13.jpg">
-                                </div>
-                                <div class="ingo">
-                                    <h3>UserA</h3>
-                                    <small>Dubai, 15 MINUTES AGO</small>
-                                </div>
-                            </div>
-                            <span class="edit">
-                                <i class="uil uil-ellipsis-h"></i>
-                            </span>
-                        </div>
-                        <div class="text"> Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text.</div>
-                        <div class="action-buttons">
-                            <div class="interaction-buttons">
-                                <span><i class="uil uil-heart"></i></span>
-                                <span><i class="uil uil-comment-dots"></i></span>
-                                <span><i class="uil uil-share-alt"></i></span>
-                            </div>
-                            <div class="bookmark">
-                                <span><i class="uil uil-bookmark-full"></i></span>
-                            </div>
-                        </div>
-
-                        <div class="liked-by">
-                            <span><img src="./images/profile-10.jpg"></span>
-                            <span><img src="./images/profile-4.jpg"></span>
-                            <span><img src="./images/profile-15.jpg"></span>
-                            <p>Liked by <b>UserC</b> and <b>4 others</b></p>
-                        </div>
-
-                        <div class="comments text-muted">View all 277 comments</div>
-                    </div>
-                    <!---------------- END OF FEED ----------------->
-                    <!------------------- FEED 2 --------------------->
-                    <div class="feed">
-                        <div class="head">
-                            <div class="user">
-                                <div class="profile-photo">
-                                    <img src="./images/profile-14.jpg">
-                                </div>
-                                <div class="ingo">
-                                    <h3>UserB</h3>
-                                    <small>Miami, 2 HOURS AGO</small>
-                                </div>
-                            </div>
-                            <span class="edit">
-                                <i class="uil uil-ellipsis-h"></i>
-                            </span>
-                        </div>
-
-                        <div class="text"> Some text. Some text. Some text. Some text. Some text. Some text. Some text. </div>
-
-                        <div class="photo">
-                            <img src="./images/feed-2.jpg">
-                        </div>
-
-                        <div class="action-buttons">
-                            <div class="interaction-buttons">
-                                <span><i class="uil uil-heart"></i></span>
-                                <span><i class="uil uil-comment-dots"></i></span>
-                                <span><i class="uil uil-share-alt"></i></span>
-                            </div>
-                            <div class="bookmark">
-                                <span><i class="uil uil-bookmark-full"></i></span>
-                            </div>
-                        </div>
-
-                        <div class="liked-by">
-                            <span><img src="./images/profile-10.jpg"></span>
-                            <span><img src="./images/profile-4.jpg"></span>
-                            <span><img src="./images/profile-15.jpg"></span>
-                            <p>Liked by <b>UserD</b> and <b>3 others</b></p>
-                        </div>
-                        <div class="comments text-muted">View all 3 comments</div>
-                    </div>
-                    <!---------------- END OF FEED ----------------->
                 </div>
                 <!------------------------------- END OF FEEDS ------------------------------------>
             </div>
@@ -284,8 +222,39 @@
                     </div>
                     <!------------ MESSAGES CATEGORY -------------->
                     <div class="category">
-                        <h6 class="active">Following</h6>
-                        <h6>My Group</h6>
+                        <h6 id="following-tab" class="active">Following</h6>
+                        <h6 id="group-tab">My Group</h6>
+                    </div>
+                    <div id="group-content">
+                        <div class="message hide">
+                            <div class="profile-photo">
+                                <img src="./images/profile-2.jpg">
+                            </div>
+                            <div class="message-body">
+                                <h5>Group Dummy</h5>
+                                <p class="text-muted">UserQ: hi</p>
+                            </div>
+                            <div class="group-edit-div">
+                                <button class="group-edit-btn">Edit</button> 
+                            </div>
+                        </div>
+                        <div id="add-group" class="hide">
+                            <label class="btn btn-primary" onclick="get_users_list()">Add Group</label>
+                        </div>
+                        <div id="add-group-overlay" class="center-overlay">
+                            <form id="add-group-form" method="POST" class="overlay-form" action="{% url 'addGroup' %}">
+                                <h3>Add Users to Group</h3>
+                                <input name='group-name' type="text" id="group-name" placeholder="Enter your group name here">
+                                <br>
+                                <div id="form-details"></div>
+                                {% csrf_token %}
+                            </form>
+                        </div>
+                        <div id="edit-group-overlay" class="center-overlay">
+                            <form id="edit-group-form" class="overlay-form" method="POST" action="{% url 'editGroup' %}">
+                                
+                            </form>
+                        </div>
                     </div>
                     <!------------ MESSAGE -------------->
                     <!----- MESSAGE ----->
@@ -412,9 +381,11 @@
 <!-- <script src="socialmedia/index.js"></script> -->
 <script>
     //Call getList() as soon as page is finished loading to display the to do list
+
     window.onload = onloadEvents;
     //... also call getList every 3 seconds hereafter to update the list
-    {#window.setInterval(getPosts, 3000);#}
+    window.setInterval(refresh, 7000);
+
 </script>
 
 </body>

@@ -19,7 +19,7 @@ const Bg3 = document.querySelector('.bg-3');
 
 // current location of the user.
 var currLocation;
-var currPage = "globalChannel";
+var currPage;
 
 
 // ================ SIDEBAR ===============
@@ -223,11 +223,55 @@ Bg3.addEventListener('click', () => {
 })
 
 
-// ======================== onload events =========================
+// ======================== Eve events =========================
 function onloadEvents() {
-    getFollow();
-    getPosts();
+    currPage = "globalChannel";
+    refreshGlobalPosts();
     acquireCurrLocation();
+
+    document.onclick = function(event) {
+        var a = event.target;
+        vis_div = document.getElementById("visibility-form")
+        grp_div = document.getElementById("add-group-form")
+        grp_edit_div = document.getElementById("edit-group-form")
+        if( !(a == vis_div || vis_div.contains(a) || 
+            a == grp_div || grp_div.contains(a) ||
+            a == grp_edit_div || grp_edit_div.contains(a))) {
+            overlay_off();
+        }
+    }
+
+    document.getElementById("group-tab").onclick = function(event) {
+        document.querySelector("#group-tab").classList.toggle("active")
+        document.querySelector("#following-tab").classList.toggle("active")
+        var msgList = document.querySelectorAll(".message")
+        for(var i=0; i<msgList.length; i++) {
+            msgList.item(i).classList.toggle("hide")
+        }
+        document.querySelector("#add-group").classList.toggle("hide")
+        update_group_list()
+        $.ajax({
+            url: "/socialmedia/get-groups",
+            datatype: "json",
+            success: function(response) {
+                update_group_list(response);
+            },
+            error: updateError
+        })
+
+    }
+
+    getFollow();
+
+    document.getElementById("following-tab").onclick = function(event) {
+        document.querySelector("#group-tab").classList.toggle("active")
+        document.querySelector("#following-tab").classList.toggle("active")
+        var msgList = document.querySelectorAll(".message")
+        for(var i=0; i<msgList.length; i++) {
+            msgList.item(i).classList.toggle("hide")
+        }
+        document.querySelector("#add-group").classList.toggle("hide")
+    }
 }
 
 
@@ -251,14 +295,14 @@ function switchToLocalNews() {
     currPage = "localNews"
     // delete all middle part.
     document.getElementById("middlePart").innerHTML = '<div class="feeds" id="allNews"></div>'
+
+    //suppose the geolocation is cached.
+    let lat = parseInt(10000 * currLocation.coords.latitude).toString();
+    let lon = parseInt(10000 * currLocation.coords.longitude).toString();
+
     $.ajax({
-        url: "/socialmedia/get-local-news",
-        type: "POST",
-        data: {
-            lat: currLocation.coords.latitude,
-            long: currLocation.coords.longitude,
-            csrfmiddlewaretoken: getCSRFToken()
-        },
+        url: "/socialmedia/get-local-news/"+lon+"/"+lat+"/",
+        type: "GET",
         success: updateNews,
         error: updateError
     })
@@ -268,6 +312,39 @@ function updateNews(response) {
     $(response).each(function() {
         $("#allNews").append(newsFormatter(this))
     })
+}
+
+function switchToGlobalChannel() {
+    // change menu item ui color
+    highlightMenuItem("globalChannel")
+    if (currPage == "globalChannel") return
+    currPage = "globalChannel"
+    // delete all middle part.
+    document.getElementById("middlePart").innerHTML =
+        '<div class="create-post" id="create-post">' +
+        '<div id="editor"><script>let editor</script></div>' +
+        '<input type="submit" value="Post" class="btn btn-primary btn-floatright" onclick="postAction()">' +
+        '</div>' +
+        '<div class="feeds" id="allFeeds"></div>'
+
+
+    ClassicEditor
+        .create( document.querySelector( '#editor' ))
+        .then( newEditor => {
+            editor = newEditor;
+        } )
+        .catch( error => {
+            console.error( error );
+        } );
+
+
+    $.ajax({
+        url: "/socialmedia/get-posts",
+        type: "GET",
+        success: updateLocalPosts,
+        error: updateError
+    })
+
 }
 
 
@@ -326,7 +403,17 @@ function updateFollowPosts(response) {
 function updatePosts(response) {
     // todo: clean deleted posts.
     // new post found.
+    console.log(response)
     $(response).each(function() {
+        console.log(this)
+        if('post_id' in this) {
+            let post_div_id = "#id_post_div_"+this['post_id']
+            if( $(post_div_id) != null) {
+                let feed_div = $(post_div_id).parentsUntil(".feeds", ".feed")[0]
+                feed_div.remove()
+                return
+            }
+        }
         if (this.type == "comment") {
             return
         }
@@ -343,6 +430,23 @@ function updatePosts(response) {
             }
         }
     })
+
+    // update edit button with onclick function
+    var edit_btns = document.getElementsByClassName("uil-ellipsis-h")
+    for( var i=0; i<edit_btns.length; i++ ) {
+        edit_btns[i].addEventListener('click', show_edit_dropdown)
+    }
+
+    var edit_vis = document.getElementsByClassName("set-visib")
+    for( var i=0; i<edit_vis.length; i++ ) {
+        edit_vis[i].addEventListener('click', show_edit_visibility)
+    }
+
+
+    var delete_btns = document.getElementsByClassName("delete-post")
+    for( var i=0; i<delete_btns.length; i++ ) {
+        delete_btns[i].addEventListener('click', delete_post)
+    }
 }
 
 
@@ -390,7 +494,10 @@ function updateFollow(response){
 }
 
 function updateLocalPosts(response) {
+    // prepend new posts on top.
+    let postIdFromResponse = []
     $(response).each(function() {
+        postIdFromResponse.push(this.post.id.toString())
         let post_id = "id_post_div_"+this.post.id
         if (document.getElementById(post_id) == null) {
             // new post found.
@@ -398,13 +505,50 @@ function updateLocalPosts(response) {
         } else {
             let comments = this.comments
             let father = document.getElementById("comments_post_div_" + this.post.id)
+            // prepend new comment on top.
             for (let i=0; i<comments.length; i++){
                 if (document.getElementById("id_comment_div_"+comments[i].id) == null){
                     $("#comments_post_div_"+this.post.id).prepend(commentFormatter(comments[i]))
                 }
             }
+            if (document.getElementById("comment_display_" + this.post.id).innerHTML != "Fold comments.") {
+                let commentCount = document.getElementById("comments_post_div_" + this.post.id).childElementCount
+                document.getElementById("comment_display_" + this.post.id).innerHTML = "View all " + commentCount + " comments.";
+            }
         }
     })
+
+    // remove the deleted posts along with their comments.
+    console.log(postIdFromResponse)
+    let removeList = []
+    for (let i = 0; i < document.getElementsByClassName("feed").length; i++) {
+        let feed = document.getElementsByClassName("feed")[i]
+        let postId = feed.childNodes[1].id.replace("id_post_div_", "")
+        // deal with deleted posts
+        if (!postIdFromResponse.includes(postId)) {
+            removeList.push(feed)
+        }
+    }
+    for (let i = 0; i < removeList.length; i++) {
+        removeList[i].remove()
+    }
+
+    // update edit button with onclick function
+    let edit_btns = document.getElementsByClassName("uil-ellipsis-h")
+    for( let i=0; i<edit_btns.length; i++ ) {
+        edit_btns[i].addEventListener('click', show_edit_dropdown)
+    }
+
+    let edit_vis = document.getElementsByClassName("set-visib")
+    for( let i=0; i<edit_vis.length; i++ ) {
+        edit_vis[i].addEventListener('click', show_edit_visibility)
+    }
+
+    var delete_btns = document.getElementsByClassName("delete-post")
+    for( var i=0; i<delete_btns.length; i++ ) {
+        delete_btns[i].addEventListener('click', delete_post)
+    }
+
 }
 
 function switchToStat() {
@@ -584,14 +728,12 @@ function switchToMapit() {
     document.getElementById("middlePart").innerHTML =
         '<div class="feeds" id="mapitPlaceholder" style="width:600px;height:450px;"></div>'
 
+    //suppose the geolocation is cached.
+    let lat = parseInt(10000 * currLocation.coords.latitude).toString();
+    let lon = parseInt(10000 * currLocation.coords.longitude).toString();
     $.ajax({
-        url: "/socialmedia/get-postsNearby",
-        type: "POST",
-        data: {
-            lat: currLocation.coords.latitude,
-            long: currLocation.coords.longitude,
-            csrfmiddlewaretoken: getCSRFToken()
-        },
+        url: "/socialmedia/get-postsNearby/"+lon+"/"+lat+"/",
+        type: "GET",
         success: updateMap,
         error: updateError
     })
@@ -648,6 +790,7 @@ function updateMap(response) {
 function postAction() {
     let post_body = editor.getData()
     editor.setData('')
+    console.log(currPage)
 
     $.ajax({
         url: "/socialmedia/post",
@@ -656,9 +799,11 @@ function postAction() {
             text: post_body,
             lat: currLocation.coords.latitude,
             long: currLocation.coords.longitude,
-            csrfmiddlewaretoken: getCSRFToken()
+            visibility: 'Public',
+            csrfmiddlewaretoken: getCSRFToken(),
+            page: currPage
         },
-        success: updatePosts,
+        success: updateLocalPosts,
         error: updateError
     })
 }
@@ -686,7 +831,333 @@ function addComment(id) {
 }
 
 
+// ======================== Edit Dropdown Menu =========================
 
+function delete_post() {
+    var feed_div = $(this).parentsUntil(".feeds", ".feed")[0]
+    var text_div = feed_div.getElementsByClassName("text")[0]
+    var post_id = text_div.id.split("_").at(-1)
+    console.log(post_id)
+    $.ajax({
+        url: "/socialmedia/delete-post",
+        datatype: "json",
+        method: 'POST',
+        data: {
+            post_id: post_id,
+            csrfmiddlewaretoken: getCSRFToken(),
+            page: currPage,
+            long: currLocation.coords.longitude,
+            lat: currLocation.coords.latitude,
+        },
+        success: updateLocalPosts,
+        error: updateError
+    })
+}
+
+function show_edit_dropdown() {
+    var parent_div = this.parentElement
+    parent_div.querySelector(".edit-dropdown-content").classList.toggle("show")
+}
+
+function show_edit_visibility() {
+    var feed_div = $(this).parentsUntil(".feeds", ".feed")[0]
+    var text_div = feed_div.getElementsByClassName("text")[0]
+    var post_id = text_div.id.split("_").at(-1)
+    post_id = parseInt(post_id)
+    $.ajax({
+        url: '/socialmedia/get-visibility',
+        method: 'POST',
+        data: {
+            'post_id': post_id,
+            csrfmiddlewaretoken: getCSRFToken(),
+        },
+        success: function(response) {
+            overlay_on(post_id, response);
+        },
+        error: updateError,
+    })
+}
+
+function update_groups_options(groups) {
+    $.ajax({
+        url: "/socialmedia/get-groups",
+        datatype: "json",
+        success: function(response) {
+            update_vis_form(response, groups);
+        },
+        error: updateError
+    })
+}
+
+function edit_post_vis() {
+    post_id = parseInt(document.getElementById("post_vis_id").value)
+    console.log("post id is "+post_id)
+    $.ajax({
+        url: "/socialmedia/set-visibility",
+        datatype: "json",
+        success: function() {
+            overlay_off();
+            // updatePosts();
+        },
+        error: function() {
+            overlay_off();
+            updateError();
+        },
+    })
+}
+
+function remove_groups_options() {
+    document.getElementById("select-groups").innerHTML = ""
+}
+
+function update_vis_form(response, groups) {
+    var check_div = document.getElementById("select-groups")
+    var innerHtml = ""
+    hide_group_ids = []
+    if(groups != null) {
+        for(var j=1; j<groups.length; j++) {
+            hide_group_ids.push(groups[j]['group_id'])
+        }
+    }
+    console.log(hide_group_ids)
+    for(var i=0; i<response.length; i++) {
+        gid = response[i]['group_id']
+        gname = response[i]['group_name']
+        if(hide_group_ids.includes(gid)) {
+            innerHtml += '<input type="checkbox" id="select_group_'+ gid 
+                      + '" name="group_' + i + '" value="' + gid + '" checked>'
+                      + '<label for="select_group_' + gid + '"> '+ gname 
+                      + '</label><br>'
+        }
+        else {
+            innerHtml += '<input type="checkbox" id="select_group_'+ gid 
+                      + '" name="group_' + i + '" value="' + gid + '">'
+                      + '<label for="select_group_' + gid + '"> '+ gname 
+                      + '</label><br>'
+        }
+    }
+    check_div.innerHTML = innerHtml
+}
+
+
+function overlay_on(post_id, response) {
+    document.getElementById("visibility-overlay").style.display = "block"
+    document.getElementById("post_vis_id").value=post_id
+    console.log(response)
+    if(response[0]['visibility'] == "Private") {
+        document.getElementById("public_vis").checked=false;
+        document.getElementById("group_vis").checked=false;
+        document.getElementById("private_vis").checked=true;
+    }
+    if(response[0]['visibility'] == "Group") {
+        document.getElementById("public_vis").checked=false;
+        document.getElementById("private_vis").checked=false;
+        document.getElementById("group_vis").checked=true;
+
+        update_groups_options(response);
+    }
+}
+
+
+function overlay_off() {
+    $(".center-overlay").each(function() {
+        this.style.display="none"
+    })
+    // document.getElementById("visibility-overlay").style.display = "none"
+    // document.getElementById("add-group-overlay").style.display = "none"
+    // document.getElementById("edit-group-overlay").style.display = "none"
+}
+
+
+// ======================== Group Tab =========================
+function get_users_list() {
+
+    $.ajax({
+        url: '/socialmedia/users-list',
+        datatype: 'json',
+        success: function(response){
+            add_users_list(response);
+        },
+        error: updateError,
+    })
+}
+
+function add_users_list(response) {
+    document.getElementById("add-group-overlay").style.display = "block"
+    console.log(response)
+    form = document.getElementById("form-details")
+    form.innerHTML = ""
+    for (var i=0; i<response.length; i++) {
+        var user = response[i]
+        console.log(user)
+        var user_check = document.createElement("input")
+        user_check.setAttribute("type", "checkbox")
+        user_check.setAttribute("id", "user_check_"+user['user_id'])
+        user_check.setAttribute("name", "user_"+user['user_id'])
+        user_check.setAttribute("value", user['user_id'])
+        var user_label = document.createElement("label")
+        user_label.setAttribute("for", "user_check_"+user['user_id'])
+        user_label.innerHTML = user['first_name'] + " " + user['last_name']
+        user_label.setAttribute("class", "user_checkbox")
+        var br_elem = document.createElement("br")
+        form.append(user_check)
+        form.append(user_label)
+        form.append(br_elem)
+    }
+    var confirm_btn = document.createElement("input")
+    confirm_btn.setAttribute("type", "submit")
+    confirm_btn.setAttribute("value", "Confirm")
+    confirm_btn.setAttribute("onsubmit", "add_group()")
+    confirm_btn.setAttribute("style", "width: 100%;padding: 5px;")
+    form.append(confirm_btn)
+
+}
+
+
+function add_group() {
+    $.ajax({
+        url: "/socialmedia/add-group",
+        datatype: "json",
+        success: function() {
+            overlay_off();
+            // updatePosts();
+        },
+        error: function() {
+            overlay_off();
+            updateError();
+        },
+    })
+}
+
+
+function show_add_group_overlay() {
+    document.getElementById("add-group-overlay").style.display = "block"
+}
+
+function update_group_list(response) {
+    // document.getElementById("group-content").innerHTML = ""
+    // console.log(response)
+    let clear = document.getElementById("group-content").getElementsByClassName("message")
+    $(clear).each(function() {
+        this.remove()
+    })
+    
+    $(response).each(function() {
+        console.log(this)
+        let msg_div = document.createElement("div")
+        msg_div.setAttribute("class", "message")
+        msg_div.setAttribute("id", "group_msg_"+this['group_id'])
+
+        let pic_div = document.createElement("div")
+        pic_div.setAttribute("class", "profile-photo")
+        pic_div.innerHTML='<img src="./images/profile-2.jpg">'
+        msg_div.appendChild(pic_div)
+
+        let body_div = document.createElement("div")
+        body_div.setAttribute("class", "message-body")
+        body_div.innerHTML='<h5>' + this['group_name'] + '</h5><p class="text-muted">UserQ: hi</p>'
+        msg_div.appendChild(body_div)
+
+        let edit_div = document.createElement("div")
+        edit_div.setAttribute("class", "group-edit-div")
+        edit_div.innerHTML='<button class="group-edit-btn" onclick="get_edit_group_info(event)">Edit</button>'
+        msg_div.appendChild(edit_div)
+
+        $("#group-content").prepend(msg_div)
+    })
+
+}
+
+function get_edit_group_info(event) {
+    console.log(event.target)
+    msg_div = $(event.target).parentsUntil("#group-content", ".message")[0]
+    group_id = msg_div.id.split("_")[2]
+    console.log(group_id)
+    $.ajax({
+        url: "/socialmedia/get-group",
+        datatype: "json",
+        method: 'POST',
+        data: {
+            group_id: group_id,
+            csrfmiddlewaretoken: getCSRFToken(),
+        },
+        success: show_group_edit_form,
+        error: updateError
+    })
+}
+
+function show_group_edit_form(response) {
+    document.getElementById("edit-group-overlay").style.display = "block"
+    edit_form = document.getElementById("edit-group-form")
+    edit_form.innerHTML = ""
+    group_users = []
+    $(response).each(function() {
+        // console.log(this)
+        let hid_group_id = document.createElement("input")
+        hid_group_id.setAttribute("type", "hidden")
+        hid_group_id.setAttribute("name", "group_id")
+        hid_group_id.setAttribute("value", this['group_id'])
+        edit_form.appendChild(hid_group_id)
+
+        let csrf = document.createElement("input")
+        csrf.setAttribute("type", "hidden")
+        csrf.setAttribute("name", "csrfmiddlewaretoken")
+        csrf.setAttribute("value", getCSRFToken())
+        edit_form.appendChild(csrf)
+
+        let form_head = document.createElement("h3")
+        form_head.innerHTML = "Edit Group " + this['group_name']
+        edit_form.appendChild(form_head)
+
+        $(this['group_users']).each(function() {
+            group_users.push(parseInt(this['user_id']))
+        })
+
+        // console.log(group_users)
+        $.ajax({
+            url: '/socialmedia/users-list',
+            datatype: 'json',
+            success: function(response){
+                $(response).each(function () {
+                    let user_id = "user_ckbx_"+this['user_id']
+                    let ckbx = document.createElement("input")
+                    ckbx.setAttribute("type", "checkbox")
+                    ckbx.setAttribute("id", user_id)
+                    ckbx.setAttribute("name", user_id)
+                    ckbx.setAttribute("value", this['user_id'])
+                    if(group_users.includes(parseInt(this['user_id']))) {
+                        ckbx.setAttribute("checked", true)
+                    }
+                    let label = document.createElement("label")
+                    label.setAttribute("for", user_id)
+                    label.setAttribute("class", "user_checkbox")
+                    label.innerHTML = this['first_name'] + " " + this['last_name']
+                    edit_form.appendChild(ckbx)
+                    edit_form.appendChild(label)
+                    edit_form.innerHTML += "<br>"
+                })
+                let confirm_btn = document.createElement("input")
+                confirm_btn.setAttribute("type", "submit")
+                confirm_btn.setAttribute("value", "Confirm")
+                confirm_btn.setAttribute("onsubmit", "edit_group()")
+                confirm_btn.setAttribute("style", "width: 100%;padding: 5px;")
+                edit_form.appendChild(confirm_btn)
+               
+            },
+            error: updateError,
+        })
+    })
+}
+
+function edit_group() {
+    $.ajax({
+        url: 'socialmedia/edit-group',
+        method: 'POST',
+        // success: updatePosts,
+        error: updateError
+    })
+
+}
 
 // ======================== Text Formatter =========================
 function postFormatter(response) {
@@ -698,11 +1169,21 @@ function postFormatter(response) {
         + '<img src="./images/profile-' + response.user + '.jpg"></div><div class="ingo">'
         + '<h3>' + response.firstname + ' ' + response.lastname + '</h3>'
         + '<small>' + response.city + ', ' + dateDiffFormatter(diff) + '</small>'
-        + '</div></div><span class="edit"><i class="uil uil-ellipsis-h"></i></span></div>'
+        + '</div></div><div class="edit">'
+
+    // Only show ellipsis button if it's mine post
+    if(response['mine']) {
+        result += '<button class="uil uil-ellipsis-h"></button>'
+    }
+
+    result += '<div class="edit-dropdown-content"> <a class="delete-post">Delete</a> '
+        + '<a class="set-visib">Visibility</a></div> </div></div>'
         + '<div class="text" id="id_post_div_' + response.id + '">' + response.text + '</div>'
         + '<div class="action-buttons"><div class="interaction-buttons"><span><i class="uil uil-heart"></i></span><span><i class="uil uil-comment-dots"></i></span><span><i class="uil uil-share-alt"></i></span></div><div class="bookmark"><span><i class="uil uil-bookmark-full"></i></span></div></div>'
         + '<div class="liked-by"><span><img src="./images/profile-10.jpg"></span><span><img src="./images/profile-4.jpg"></span><span><img src="./images/profile-15.jpg"></span><p>Liked by <b>UserC</b> and <b>4 others</b></p></div>'
         + '<div class="comments text-muted">View all 277 comments</div></div>'
+    
+
     return result
 }
 
@@ -716,12 +1197,23 @@ function postWithCommentsFormatter(response) {
     }else{
         button = '<div class="follow_' + post.userid + '"><button onClick="follow(' + post.userid + ')">Follow</button></div>'
     }
+    let start = luxon.DateTime.fromJSDate(new Date(post.created_time))
+    let end = luxon.DateTime.fromJSDate(new Date())
+    let diff = end.diff(start, ['days', 'hours', 'minutes']).toObject()
 
     let result = '<div class="feed"><div class="head"><div class="user"><div class="profile-photo">'
         + '<img src="./images/profile-' + post.user + '.jpg"></div><div class="ingo">'
         + '<h3>' + post.firstname + ' ' + post.lastname + '</h3>' + button
-        + '<small>' + post.city + ', 15 MINUTES AGO</small>'
-        + '</div></div><span class="edit"><i class="uil uil-ellipsis-h"></i></span></div>'
+
+        + '<small>' + post.city + ', ' + dateDiffFormatter(diff) + '</small>'
+        + '</div></div><div class="edit">'
+
+        if(post['mine']) {
+            result += '<button class="uil uil-ellipsis-h"></button>'
+        }
+
+        result += '<div class="edit-dropdown-content"> <a class="delete-post">Delete</a> '
+        + '<a class="set-visib">Visibility</a></div> </div></div>'
         + '<div class="text" id="id_post_div_' + post.id + '">' + post.text + '</div>'
 
         + '<div class="action-buttons"><div class="interaction-buttons"><span><i class="uil uil-heart"></i></span><span><i class="uil uil-comment-dots"></i></span><span><i class="uil uil-share-alt"></i></span></div><div class="bookmark"><span><i class="uil uil-bookmark-full"></i></span></div></div>'
@@ -870,12 +1362,49 @@ function getFollow() {
     })
 }
 
+
+// called by intervals.
+function refresh() {
+    if (currPage == "globalChannel") {
+        refreshGlobalPosts()
+    } else if (currPage == "localStream") {
+        refreshLocalPosts()
+    } else if (currPage == "localNews") {
+        refreshLocalNews()
+    }
+}
+
 // get posts
-function getPosts() {
+function refreshGlobalPosts() {
     $.ajax({
         url: "/socialmedia/get-posts",
-        datatype: "json",
-        success: updatePosts,
+        type: "GET",
+        success: updateLocalPosts,
+        error: updateError
+    })
+}
+
+function refreshLocalPosts() {
+    let lat = parseInt(10000 * currLocation.coords.latitude).toString();
+    let lon = parseInt(10000 * currLocation.coords.longitude).toString();
+
+    $.ajax({
+        url: "/socialmedia/get-local/"+lon+"/"+lat+"/",
+        type: "GET",
+        success: updateLocalPosts,
+        error: updateError
+    })
+}
+
+function refreshLocalNews() {
+    //suppose the geolocation is cached.
+    let lat = parseInt(10000 * currLocation.coords.latitude).toString();
+    let lon = parseInt(10000 * currLocation.coords.longitude).toString();
+
+    $.ajax({
+        url: "/socialmedia/get-local-news/"+lon+"/"+lat+"/",
+        type: "GET",
+        success: updateNews,
         error: updateError
     })
 }
@@ -895,6 +1424,8 @@ function follow(id){
 }
 
 function unfollow(id){
+    console.log("unfollow id")
+    console.log(id)
     let buttons = document.getElementsByClassName('follow_'+id)
     for (let i=0; i<buttons.length; i++){
         let button = buttons[i]
@@ -907,4 +1438,14 @@ function unfollow(id){
         error: updateError
     })
 }
+
+function focusToPostInput() {
+    if (currPage == "globalChannel" || currPage == "localStream") {
+        document.getElementsByClassName("ck ck-content ck-editor__editable ck-rounded-corners ck-editor__editable_inline ck-blurred")[0].focus()
+    } else {
+        switchToGlobalChannel()
+    }
+
+}
+
 // END
