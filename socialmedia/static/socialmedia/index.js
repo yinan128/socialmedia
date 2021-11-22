@@ -249,10 +249,13 @@ function onloadEvents() {
             msgList.item(i).classList.toggle("hide")
         }
         document.querySelector("#add-group").classList.toggle("hide")
-        update_group_list()
+        // update_group_list()
         $.ajax({
             url: "/socialmedia/get-groups",
             datatype: "json",
+            data: {
+                "for_user": true
+            },
             success: function(response) {
                 update_group_list(response);
             },

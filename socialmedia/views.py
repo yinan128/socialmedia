@@ -587,7 +587,13 @@ def get_post_visibility(request):
 
 # Get all groups in the database
 def get_groups(request):
-    groups = Group.objects.all()
+
+    if('for_user' in request.GET):
+        groups = request.user.profile.groups.all()
+
+    else:
+        groups = Group.objects.all()
+
     response_data = []
     if( Group.objects.count() == 0):
         response_json = json.dumps(response_data)
