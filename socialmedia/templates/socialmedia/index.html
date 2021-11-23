@@ -18,7 +18,8 @@
     <script src="{% static 'socialmedia/ckeditor.js' %}"></script>
     <script src="{% static 'socialmedia/plotly-2.4.2.min.js' %}"></script>
     <script src="{% static 'socialmedia/luxon.min.js' %}"></script>
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/echarts@5.2.2/dist/echarts.min.js"></script>;
+    <script src="{% static 'socialmedia/echarts.min.js' %}"></script>
+    <!-- <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/echarts@5.2.2/dist/echarts.min.js"></script>; -->
 </head>
 
 <body>
@@ -27,10 +28,6 @@
             <h2 class="log">
                 Social
             </h2>
-            <div class="search-bar">
-                <i class="uil uil-search"></i>
-                <input type="search" placeholder="Search for creators, inspirations, and projects">
-            </div>
             <div class="create">
                 <div class="profile-photo">
                     <img src="{{picture}}">
@@ -64,6 +61,10 @@
                     <a class="menu-item active" onclick="switchToGlobalChannel()" id="globalChannel">
                         <span><i class="uil uil-compass"></i></span><h3>Global Channel</h3>
                     </a>
+                    
+                    <a class="menu-item" onclick="switchToFollowChannel()" id="followChannel">
+                        <span><i class="uil uil-home"></i></span><h3>Follow Channel</h3>
+                    </a>
                     <a class="menu-item" onclick="switchToLocalStream()" id="localStream">
                         <span><i class="uil uil-home"></i></span><h3>Local Channel</h3>
                     </a>
@@ -73,79 +74,12 @@
                     <a class="menu-item" onclick="switchToMapit()" id="mapitChannel">
                         <span><i class="uil uil-compass"></i></span><h3>Map it</h3>
                     </a>
-                    <a class="menu-item" id="notifications">
-                        <span><i class="uil uil-bell"><small class="notification-count">9+</small></i></span><h3>Notifications</h3>
-                        <!-------------------- NOTIFICATION POPUP ---------------->
-                        <div class="notifications-popup">
-                            <div>
-                                <div class="profile-photo">
-                                    <img src="./images/profile-2.jpg">
-                                </div>
-                                <div class="notification-body">
-                                    <b>UserK</b> accepted your friend request
-                                    <small class="text-muted">2 DAYS AGO</small>
-                                </div>
-                            </div>
-                            <div>
-                                <div class="profile-photo">
-                                    <img src="./images/profile-3.jpg">
-                                </div>
-                                <div class="notification-body">
-                                    <b>UserC</b> commented on your post
-                                    <small class="text-muted">1 HOUR AGO</small>
-                                </div>
-                            </div>
-                            <div>
-                                <div class="profile-photo">
-                                    <img src="./images/profile-4.jpg">
-                                </div>
-                                <div class="notification-body">
-                                    <b>UserA</b> and <b>283 others </b> liked your post
-                                    <small class="text-muted">4 MINUTES AGO</small>
-                                </div>
-                            </div>
-                            <div>
-                                <div class="profile-photo">
-                                    <img src="./images/profile-5.jpg">
-                                </div>
-                                <div class="notification-body">
-                                    <b>UserD</b> commented on a post you are tagged in
-                                    <small class="text-muted">2 DAYS AGO</small>
-                                </div>
-                            </div>
-                            <div>
-                                <div class="profile-photo">
-                                    <img src="./images/profile-6.jpg">
-                                </div>
-                                <div class="notification-body">
-                                    <b>UserW</b> commented on a post you are tagged in
-                                    <small class="text-muted">1 HOUR AGO</small>
-                                </div>
-                            </div>
-                            <div>
-                                <div class="profile-photo">
-                                    <img src="./images/profile-7.jpg">
-                                </div>
-                                <div class="notification-body">
-                                    <b>UserP</b> commented on your post
-                                    <small class="text-muted">1 HOUR AGO</small>
-                                </div>
-                            </div>
-                        </div>
-                        <!-------------------- END NOTIFICATION POPUP ---------------->
-                    </a>
-                    <a class="menu-item">
-                        <span><i class="uil uil-bookmark"></i></span><h3>Bookmarks</h3>
-                    </a>
+                    
                     <a class="menu-item" id="statistics" onclick="switchToStat()">
                         <span><i class="uil uil-chart-line"></i></span><h3>Analytics</h3>
-                    </a>
-                    <a class="menu-item">
-                        <span><i class="uil uil-setting"></i></span><h3>Settings</h3>
-                    </a>                        
+                    </a>                      
                 </div>
                 <!------------------- END OF SIDEBAR -------------------->
-                <label for="create-post" class="btn btn-primary">Create Post</label>
             </div>
             <!------------------- END OF LEFT -------------------->
 
@@ -180,7 +114,7 @@
 
                 <!------------------- Visibility Overlay --------------------->
                 <div id="visibility-overlay" class="center-overlay">
-                    <form id="visibility-form" method="POST" action="{% url 'visibility' %}">
+                    <form id="visibility-form" method="POST" class="overlay-form" action="{% url 'visibility' %}">
                         Set Post Visibility:<br>
                         <input type="hidden" name="post_id" id="post_vis_id" value="0">
 
@@ -199,91 +133,6 @@
                 </div>
                 <!------------------- FEEDS --------------------->
                 <div class="feeds" id="allFeeds">
-                    <!------------------- FEED 1 --------------------->
-                    <div class="feed">
-                        <div class="head">
-                            <div class="user">
-                                <div class="profile-photo">
-                                    <img src="./images/profile-13.jpg">
-                                </div>
-                                <div class="ingo">
-                                    <h3>UserA</h3>
-                                    <small>Dubai, 15 MINUTES AGO</small>
-                                </div>
-                            </div>
-                            <div class="edit">
-                                <button class="uil uil-ellipsis-h"></button>
-                                <div class="edit-dropdown-content">
-                                    <a class="edit-post">Edit</a>
-                                    <a class="set-visib">Visibility</a>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="text"> Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text. Some text.</div>
-                        <div class="action-buttons">
-                            <div class="interaction-buttons">
-                                <span><i class="uil uil-heart"></i></span>
-                                <span><i class="uil uil-comment-dots"></i></span>
-                                <span><i class="uil uil-share-alt"></i></span>
-                            </div>
-                            <div class="bookmark">
-                                <span><i class="uil uil-bookmark-full"></i></span>
-                            </div>
-                        </div>
-
-                        <div class="liked-by">
-                            <span><img src="./images/profile-10.jpg"></span>
-                            <span><img src="./images/profile-4.jpg"></span>
-                            <span><img src="./images/profile-15.jpg"></span>
-                            <p>Liked by <b>UserC</b> and <b>4 others</b></p>
-                        </div>
-
-                        <div class="comments text-muted">View all 277 comments</div>
-                    </div>
-                    <!---------------- END OF FEED ----------------->
-                    <!------------------- FEED 2 --------------------->
-                    <div class="feed">
-                        <div class="head">
-                            <div class="user">
-                                <div class="profile-photo">
-                                    <img src="./images/profile-14.jpg">
-                                </div>
-                                <div class="ingo">
-                                    <h3>UserB</h3>
-                                    <small>Miami, 2 HOURS AGO</small>
-                                </div>
-                            </div>
-                            <span class="edit">
-                                <i class="uil uil-ellipsis-h"></i>
-                            </span>
-                        </div>
-
-                        <div class="text"> Some text. Some text. Some text. Some text. Some text. Some text. Some text. </div>
-
-                        <div class="photo">
-                            <img src="./images/feed-2.jpg">
-                        </div>
-
-                        <div class="action-buttons">
-                            <div class="interaction-buttons">
-                                <span><i class="uil uil-heart"></i></span>
-                                <span><i class="uil uil-comment-dots"></i></span>
-                                <span><i class="uil uil-share-alt"></i></span>
-                            </div>
-                            <div class="bookmark">
-                                <span><i class="uil uil-bookmark-full"></i></span>
-                            </div>
-                        </div>
-
-                        <div class="liked-by">
-                            <span><img src="./images/profile-10.jpg"></span>
-                            <span><img src="./images/profile-4.jpg"></span>
-                            <span><img src="./images/profile-15.jpg"></span>
-                            <p>Liked by <b>UserD</b> and <b>3 others</b></p>
-                        </div>
-                        <div class="comments text-muted">View all 3 comments</div>
-                    </div>
-                    <!---------------- END OF FEED ----------------->
                 </div>
                 <!------------------------------- END OF FEEDS ------------------------------------>
             </div>
@@ -296,11 +145,7 @@
                     <div class="heading">
                         <h4>Connections</h4>
                     </div>
-                    <!------------ SEARCH BAR -------------->
-                    <div class="search-bar">
-                        <i class="uil uil-search"></i>
-                        <input type="search" placeholder="Search" id="message-search">
-                    </div>
+                    
                     <!------------ MESSAGES CATEGORY -------------->
                     <div class="category">
                         <h6 id="following-tab" class="active">Following</h6>
@@ -308,19 +153,18 @@
                     </div>
                     <div id="group-content">
                         <div class="message hide">
-                            <div class="profile-photo">
-                                <img src="./images/profile-2.jpg">
-                            </div>
                             <div class="message-body">
-                                <h5>Group 1</h5>
-                                <p class="text-muted">UserQ: hi</p>
+                                <h5>Group Dummy</h5>
+                            </div>
+                            <div class="group-edit-div">
+                                <button class="btn_tiny">Edit</button> 
                             </div>
                         </div>
                         <div id="add-group" class="hide">
-                            <label class="btn btn-primary" onclick="get_users_list()">Add Group</label>
+                            <label class="btn_middle btn-primary" onclick="get_users_list()">Add Group</label>
                         </div>
                         <div id="add-group-overlay" class="center-overlay">
-                            <form id="add-group-form" method="POST" action="{% url 'addGroup' %}">
+                            <form id="add-group-form" method="POST" class="overlay-form" action="{% url 'addGroup' %}">
                                 <h3>Add Users to Group</h3>
                                 <input name='group-name' type="text" id="group-name" placeholder="Enter your group name here">
                                 <br>
@@ -328,126 +172,19 @@
                                 {% csrf_token %}
                             </form>
                         </div>
+                        <div id="edit-group-overlay" class="center-overlay">
+                            <form id="edit-group-form" class="overlay-form" method="POST" action="{% url 'editGroup' %}">
+                                
+                            </form>
+                        </div>
                     </div>
                     <!------------ MESSAGE -------------->
                     <!----- MESSAGE ----->
-                    <div class="message">
-                        <div class="profile-photo">
-                            <img src="./images/profile-2.jpg">
-                        </div>
-                        <div class="message-body">
-                            <h5>UserQ</h5>
-                            <p class="text-muted">Just woke up bruh</p>
-                        </div>
+                    <div id="messages">
                     </div>
-                    <!----- MESSAGE ----->
-                    <div class="message">
-                        <div class="profile-photo">
-                            <img src="./images/profile-3.jpg">
-                            <div class="active"></div>
-                        </div>
-                        <div class="message-body">
-                            <h5>UserF</h5>
-                            <p class="text-bold"></p>
-                        </div>
-                    </div>
-                    <!----- MESSAGE ----->
-                    <div class="message">
-                        <div class="profile-photo">
-                            <img src="./images/profile-4.jpg">
-                        </div>
-                        <div class="message-body">
-                            <h5>UserJ</h5>
-                            <p class="text-bold">ok</p>
-                        </div>
-                    </div>
-                    <!----- MESSAGE ----->
-                    <div class="message">
-                        <div class="profile-photo">
-                            <img src="./images/profile-5.jpg">
-                        </div>
-                        <div class="message-body">
-                            <h5>UserD</h5>
-                            <p class="text-bold">okk</p>
-                        </div>
-                    </div>
-                    <!----- MESSAGE ----->
-                    <div class="message">
-                        <div class="profile-photo">
-                            <img src="./images/profile-6.jpg">
-                        </div>
-                        <div class="message-body">
-                            <h5>UserM</h5>
-                            <p class="text-muted">lol night</p>
-                        </div>
-                    </div>
-                    <!----- MESSAGE ----->
-                    <div class="message">
-                        <div class="profile-photo">
-                            <img src="./images/profile-7.jpg">
-                            <div class="active"></div>
-                        </div>
-                        <div class="message-body">
-                            <h5>UserC</h5>
-                            <p class="text-bold">Birthday Tomorrow!</p>
-                        </div>
-                    </div>
+                    
                 </div>
                 <!------------ END OF MESSAGES -------------->
-
-
-                <!------------ FRIEND REQUESTS -------------->
-                <div class="friend-requests">
-                    <h4>Requests</h4>
-                    <!----- REQUEST 1----->
-                    <div class="request">
-                        <div class="info">
-                            <div class="profile-photo">
-                                <img src="./images/profile-3.jpg">
-                            </div>
-                            <div>
-                                <h5>UserH</h5>
-                                <p class="text-muted">8 mutual friends</p>
-                            </div>
-                        </div>
-                        <div class="action">
-                            <button class="btn btn-primary">Accept</button>
-                            <button class="btn">Agree</button>
-                        </div>
-                    </div>
-                    <!----- REQUEST 2----->
-                    <div class="request">
-                        <div class="info">
-                            <div class="profile-photo">
-                                <img src="./images/profile-3.jpg">
-                            </div>
-                            <div>
-                                <h5>UserJ</h5>
-                                <p class="text-muted">2 mutual friends</p>
-                            </div>
-                        </div>
-                        <div class="action">
-                            <button class="btn btn-primary">Accept</button>
-                            <button class="btn">Agree</button>
-                        </div>
-                    </div>
-                    <!----- REQUEST 3----->
-                    <div class="request">
-                        <div class="info">
-                            <div class="profile-photo">
-                                <img src="./images/profile-3.jpg">
-                            </div>
-                            <div>
-                                <h5>UserL</h5>
-                                <p class="text-muted">9 mutual friends</p>
-                            </div>
-                        </div>
-                        <div class="action">
-                            <button class="btn btn-primary">Accept</button>
-                            <button class="btn">Agree</button>
-                        </div>
-                    </div>
-                </div>
                 </div>
             </div>
             <!--====================== END OF RIGHT ==========================-->
@@ -515,7 +252,8 @@
 
     window.onload = onloadEvents;
     //... also call getList every 3 seconds hereafter to update the list
-    {#window.setInterval(getPosts, 3000);#}
+    window.setInterval(refresh, 3000);
+    //window.setInterval(getFollow, 3000);
 
 </script>
 

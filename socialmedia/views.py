@@ -21,8 +21,6 @@ def update_user_social_data(strategy, *args, **kwargs):
 
         if response['picture']:
             url = response['picture']
-            print("I really go here")
-            print(url)
             try:
                 userProfile_obj = Profile.objects.get(user=user)
             except Profile.DoesNotExist:
@@ -45,10 +43,8 @@ def add_profile(user):
         userProfile_obj.user = user
 
         if user.socialaccount_set.filter(provider='google'):
-            print(SocialAccount.objects.get(user=user).extra_data['picture'])
             userProfile_obj.picture = SocialAccount.objects.get(user=user).extra_data['picture']
         else:
-            print(user.socialaccount_set.filter(provider='github')[0])
             userProfile_obj.picture = SocialAccount.objects.get(user=user).extra_data['avatar_url']
             
         userProfile_obj.save()
@@ -56,13 +52,8 @@ def add_profile(user):
 # Create your views here.
 @login_required()
 def global_stream(request):
-    print(request.user.username)
-    print(request.user.first_name)
-    print(request.user.last_name)
     add_profile(request.user)
-    # print(request.user)
     user = Profile.objects.get(user=request.user)
-    # print(user.picture)
     context = {
         'first_name': request.user.first_name,
         'last_name': request.user.last_name,
@@ -78,7 +69,6 @@ def login_action(request):
 
 
 def get_users_stat(request):
-    print(SocialAccount.objects.filter(provider='github'))
     github_users_count = SocialAccount.objects.filter(provider='github').count()
     google_users_count = SocialAccount.objects.filter(provider='google').count()
     users_dis = {
@@ -92,11 +82,7 @@ def get_posts_stat():
     posts_stat = {}
     posts_date = {}
     for post in posts:
-        locator = Nominatim(user_agent="google")
-        location = locator.reverse(Point(post.latitude, post.longitude))
-        address = location.raw["address"]
-        combined_addr = f"{address['road']}, {address['neighbourhood']}, {address['city']}"
-        print(combined_addr)
+        combined_addr = post.combined_addr
         if combined_addr in posts_stat:
             posts_stat[combined_addr] += 1
         else:
@@ -113,8 +99,8 @@ def get_posts_stat():
 
 def get_stat(request):
     users_dis = get_users_stat(request)
-    user = Profile.objects.get(user=request.user)
     posts_stat, posts_date = get_posts_stat()
+    user = Profile.objects.get(user=request.user)
     posts_dis = []
     for key, value in posts_stat.items():
         posts_dis.append({'value': value, 'name': key})
@@ -141,6 +127,7 @@ def get_stat(request):
     response_json = json.dumps(context)
     response = HttpResponse(response_json, content_type='application/json')
     response['Access-Control-Allow-Origin'] = '*'
+    print("end")
     return response
 
 
@@ -158,12 +145,24 @@ def post_action(request):
         return _my_json_error_response("Invalid post.", status=400)
 
 
-    geolocator = Nominatim(user_agent="geoapiExercises")
-    location = geolocator.reverse(request.POST['lat']+","+request.POST['long'])
-    city = location.raw['address']['city']
+    # geolocator = Nominatim(user_agent="geoapiExercises")
+    # location = geolocator.reverse(request.POST['lat']+","+request.POST['long'])
+    # city = location.raw['address']['city']
 
+    locator = Nominatim(user_agent="google")
+    location = locator.reverse(Point(request.POST['lat'], request.POST['long']))
+    address = location.raw["address"]
+    city = "unknown"
+    combined_addr = "unknown"
+    try:
+        city = address['city']
+    except:
+        pass
+    try:
+        combined_addr = f"{address['road']}, {address['neighbourhood']}, {address['city']}"
+    except:
+        pass
     post = Post(
-
         user=request.user,
         text=request.POST['text'],
         time=timezone.now(),
@@ -171,12 +170,13 @@ def post_action(request):
         longitude=request.POST['long'],
         city = city,
         visibility = request.POST['visibility'],
+        combined_addr = combined_addr
     )
-    print(post.longitude)
-    print(post.latitude)
     post.save()
-
-    return get_posts(request)
+    if request.POST['page'] == "globalChannel":
+        return get_posts(request)
+    elif request.POST['page'] == "localStream":
+        return get_local(request, float(request.POST['long']) * 10000, float(request.POST['lat']) * 10000)
 
 def add_comment(request):
     if request.method != 'POST':
@@ -184,12 +184,10 @@ def add_comment(request):
     if not request.user.id or not request.user.is_authenticated or 'comment_text' in request.POST and request.POST['comment_text'].startswith("Comment from not logged-in user"):
         return HttpResponse({"error": 'not logged in'}, content_type='application/json', status=401)
     if 'post_id' not in request.POST or 'comment_text' not in request.POST or request.POST['comment_text'] == '' or request.POST['post_id'] == '' or request.POST['comment_text'].startswith("invalid post_id"):
-        print("returned by me!")
         return HttpResponse({"error": 'bad parameters'}, content_type='application/json', status=400)
     if request.POST['comment_text'].startswith("large post_id"):
         return HttpResponse({"error": 'bad parameters'}, content_type='application/json', status=400)
     if 'csrfmiddlewaretoken' not in request.POST or request.POST['csrfmiddlewaretoken'] == '' or not request.POST['csrfmiddlewaretoken']:
-        print('now returned by me!')
         return HttpResponse({"error": 'Missing token'}, content_type='application/json', status=400)
 
     new_comment = Comment(text=request.POST['comment_text'], user=request.user, time=timezone.now())
@@ -207,19 +205,48 @@ def add_comment(request):
 
     return get_local(request, request.POST['lon'], request.POST['lat'])
 
-
-
-
-def get_posts(request):
+def get_follows(request):
     response_data = []
-    for post in Post.objects.all().order_by('time'):
+    user = request.user
+    following = user.profile.following.all() 
 
-        geolocator = Nominatim(user_agent="geoapiExercises")
-        location = geolocator.reverse(str(post.latitude) + "," + str(post.longitude))
-        city = location.raw['address']['city']
+    print (Profile.objects.all())
+
+    for follow in following:
+        # print(follow.id)
+        picture = None
+        try:
+            profile = Profile.objects.get(user=follow.id)
+            picture = profile.picture
+        except:
+            pass
+        my_follow = {
+            'firstname': follow.first_name,
+            'lastname': follow.last_name,
+            'id': follow.id,
+            'picture': picture
+        }
+        response_data.append(my_follow)
+
+    response_json = json.dumps(response_data)
+    response = HttpResponse(response_json, content_type='application/json')
+    response['Access-Control-Allow-Origin'] = '*'
+    return response
+
+def get_follow(request):
+    response_data = []
+    user = request.user
+    following = user.profile.following.all()
+    posts = Post.objects.filter(user__in=following).order_by("time")
+
+    for post in posts:
+        post_as_whole = {}
+        profile = Profile.objects.get(user=post.user.id)
+        picture = profile.picture
         my_post = {
             'type': 'post',
             'id': post.id,
+            'userid': post.user.id,
             'user': post.user.username,
             'firstname': post.user.first_name,
             'lastname': post.user.last_name,
@@ -227,25 +254,41 @@ def get_posts(request):
             'created_time': post.time.isoformat(),
             'longitude': post.longitude,
             'latitude': post.latitude,
-            'city': city,
-            'mine': (post.user == request.user),
+            'city': post.city,
+            'follow': '1',
+            'mine': (request.user == post.user),
+            'picture': picture
         }
+        comments = post.comment.all().order_by("time")
+        comment_list = []
+        for comment in comments:
+            my_comment = {
+                'type': 'comment',
+                'id': comment.id,
+                'user': comment.user.username,
+                'firstname': comment.user.first_name,
+                'lastname': comment.user.last_name,
+                'text': comment.text,
+                'created_time': comment.time.isoformat()
+            }
+            comment_list.append(my_comment)
+        post_as_whole['post'] = my_post
+        post_as_whole['comments'] = comment_list
+
         # Check post visibility
-        if( post.visibility == "Public" or my_post['mine']):
-            response_data.append(my_post)
+        if (post.visibility == "Public" or my_post['mine']):
+            response_data.append(post_as_whole)
 
-        elif( post.visibility == "Private" and post.user == request.user):
-            response_data.append(my_post)
+        elif (post.visibility == "Private" and post.user == request.user):
+            response_data.append(post_as_whole)
 
-        elif( post.visibility == "Group" ) :
+        elif (post.visibility == "Group"):
             found = False
             for group in post.hide_groups.all():
                 if request.user in group.users.all():
                     found = True
             if not found:
-                response_data.append(my_post)
-
-
+                response_data.append(post_as_whole)
 
     response_json = json.dumps(response_data)
     response = HttpResponse(response_json, content_type='application/json')
@@ -253,24 +296,99 @@ def get_posts(request):
     return response
 
 
-def get_nearbyPosts(request):
-    response_data = []
+def get_posts(request):
+    if not request.user.id or not request.user.is_authenticated:
+        return HttpResponse({"error": 'not logged in'}, content_type='application/json', status=401)
 
+    following = request.user.profile.following.all()
+    response_data = []
     for post in Post.objects.all().order_by('time'):
-        geolocator = Nominatim(user_agent="geoapiExercises")
-        location = geolocator.reverse(str(post.latitude) + "," + str(post.longitude))
-        city = location.raw['address']['city']
+        #geolocator = Nominatim(user_agent="geoapiExercises")
+        #location = geolocator.reverse(str(post.latitude) + "," + str(post.longitude))
+        #city = location.raw['address']['city']
+        post_as_whole = {}
+        is_follow = '1' if post.user in following else '0'
+        profile = Profile.objects.get(user=post.user.id)
+        picture = profile.picture
         my_post = {
             'type': 'post',
             'id': post.id,
             'user': post.user.username,
+            'userid': post.user.id,
+            'firstname': post.user.first_name,
+            'lastname': post.user.last_name,
+            'text': post.text,
+            'created_time': post.time.isoformat(),
+            'longitude': post.longitude,
+            'latitude': post.latitude,
+            'city': post.city,
+            'mine': (post.user == request.user),
+            'follow': is_follow,
+            'picture': picture,
+        }
+        comments = post.comment.all().order_by("time")
+        comment_list = []
+        for comment in comments:
+            profile = Profile.objects.get(user=comment.user.id)
+            picture = profile.picture
+            my_comment = {
+                'type': 'comment',
+                'id': comment.id,
+                'user': comment.user.username,
+                'firstname': comment.user.first_name,
+                'lastname': comment.user.last_name,
+                'text': comment.text,
+                'created_time': comment.time.isoformat(),
+                'picture': picture
+            }
+            comment_list.append(my_comment)
+        post_as_whole['post'] = my_post
+        post_as_whole['comments'] = comment_list
+
+        # Check post visibility
+        if( post.visibility == "Public" or my_post['mine']):
+            response_data.append(post_as_whole)
+
+        elif( post.visibility == "Private" and post.user == request.user):
+            response_data.append(post_as_whole)
+
+        elif( post.visibility == "Group" ) :
+            found = False
+            for group in post.hide_groups.all():
+                if request.user in group.users.all():
+                    found = True
+            if not found:
+                response_data.append(post_as_whole)
+
+    response_json = json.dumps(response_data)
+    response = HttpResponse(response_json, content_type='application/json')
+    response['Access-Control-Allow-Origin'] = '*'
+    return response
+
+# given the longitude and latitude, return the posts (excluding comments) in the same city.
+def get_nearbyPosts(request, longitude, latitude):
+    if request.method == 'POST':
+        return HttpResponse({"error": 'invalid method'}, content_type='application/json', status=405)
+    if not request.user.id or not request.user.is_authenticated:
+        return HttpResponse({"error": 'not logged in'}, content_type='application/json', status=401)
+
+    response_data = []
+    longitude = str(float(longitude) / 10000)
+    latitude = str(float(latitude) / 10000)
+    geolocator = Nominatim(user_agent="geoapiExercises")
+    location = geolocator.reverse(latitude + "," + longitude)
+    city = location.raw['address']['city']
+    posts = Post.objects.filter(city__in=[city])
+
+    for post in posts:
+        my_post = {
             'firstname': post.user.first_name,
             'lastname': post.user.last_name,
             'text': cleanText(post.text),
             'created_time': post.time.isoformat(),
             'longitude': post.longitude,
             'latitude': post.latitude,
-            'city': city
+            'city': post.city
         }
         response_data.append(my_post)
 
@@ -288,11 +406,16 @@ def cleanText(text):
         .replace("<h3>","").replace("</h3>","<br>")
 
 
-# todo: error handling.
-def get_news(request):
+def get_news(request, longitude, latitude):
+    if request.method == 'POST':
+        return HttpResponse({"error": 'invalid method'}, content_type='application/json', status=405)
+    if not request.user.id or not request.user.is_authenticated:
+        return HttpResponse({"error": 'not logged in'}, content_type='application/json', status=401)
     response_data = []
+    longitude = str(float(longitude) / 10000)
+    latitude = str(float(latitude) / 10000)
     geolocator = Nominatim(user_agent="geoapiExercises")
-    location = geolocator.reverse(str(request.POST['lat']) + "," + str(request.POST['long']))
+    location = geolocator.reverse(latitude + "," + longitude)
     city = location.raw['address']['city']
     i = 0
     for title, author, publish, description, url, imageUrl in getNewsFromCity(city):
@@ -312,7 +435,29 @@ def get_news(request):
     response['Access-Control-Allow-Origin'] = '*'
     return response
 
+def follow(request, id):
+    profile = request.user.profile
+    curr_id = get_object_or_404(User, id=id)
+    profile.following.add(curr_id)
+    profile.save()
+
+    response = HttpResponse(json.dumps([]), content_type='application/json')
+    response['Access-Control-Allow-Origin'] = '*'
+    return get_follows(request)
+
+def unfollow(request, id):
+    profile = request.user.profile
+    curr_id = get_object_or_404(User, id=id)
+    profile.following.remove(curr_id)
+    profile.save()
+    
+    response = HttpResponse(json.dumps([]), content_type='application/json')
+    response['Access-Control-Allow-Origin'] = '*'
+    return get_follows(request)
+
 def get_local(request, longitude, latitude):
+    if not request.user.id or not request.user.is_authenticated:
+        return HttpResponse({"error": 'not logged in'}, content_type='application/json', status=401)
     response_data = []
     longitude = str(float(longitude) / 10000)
     latitude = str(float(latitude) / 10000)
@@ -320,24 +465,34 @@ def get_local(request, longitude, latitude):
     location = geolocator.reverse(latitude+","+longitude)
     city = location.raw['address']['city']
     posts = Post.objects.filter(city__in=[city]).order_by("time")
+    following = request.user.profile.following.all()
 
     for post in posts:
         post_as_whole = {}
+        is_follow = '1' if post.user in following else '0'
+        profile = Profile.objects.get(user=post.user.id)
+        picture = profile.picture
         my_post = {
             'type': 'post',
             'id': post.id,
             'user': post.user.username,
+            'userid': post.user.id,
             'firstname': post.user.first_name,
             'lastname': post.user.last_name,
             'text': post.text,
             'created_time': post.time.isoformat(),
             'longitude': post.longitude,
             'latitude': post.latitude,
-            'city': post.city
+            'city': post.city,
+            'follow': is_follow,
+            'mine': (request.user == post.user),
+            'picture': picture,
         }
         comments = post.comment.all().order_by("time")
         comment_list = []
         for comment in comments:
+            profile = Profile.objects.get(user=comment.user.id)
+            picture = profile.picture
             my_comment = {
                 'type': 'comment',
                 'id': comment.id,
@@ -345,12 +500,27 @@ def get_local(request, longitude, latitude):
                 'firstname': comment.user.first_name,
                 'lastname': comment.user.last_name,
                 'text': comment.text,
-                'created_time': comment.time.isoformat()
+                'created_time': comment.time.isoformat(),
+                'picture': picture
             }
             comment_list.append(my_comment)
         post_as_whole['post'] = my_post
         post_as_whole['comments'] = comment_list
-        response_data.append(post_as_whole)
+
+        # Check post visibility
+        if( post.visibility == "Public" or my_post['mine']):
+            response_data.append(post_as_whole)
+
+        elif( post.visibility == "Private" and post.user == request.user):
+            response_data.append(post_as_whole)
+
+        elif( post.visibility == "Group" ) :
+            found = False
+            for group in post.hide_groups.all():
+                if request.user in group.users.all():
+                    found = True
+            if not found:
+                response_data.append(post_as_whole)
 
     response_json = json.dumps(response_data)
     response = HttpResponse(response_json, content_type='application/json')
@@ -360,15 +530,11 @@ def get_local(request, longitude, latitude):
 
 # Set post visibility (post_id and visibility given in request)
 def set_post_visibility(request):
-    print("inside set_post_visibility")
-    for key,value in request.POST.items():
-        print("{} {}".format(key,value))
     pid = request.POST['post_id']
     post = get_object_or_404(Post, id=pid)
 
     # Private
     if(request.POST['post_vis_option'] == "private"):
-        print("-----PRIVATE-----")
         post.visibility = "Private"
         for grp in Group.objects.all():
             post.hide_groups.add(get_object_or_404(Group, id=grp.id))
@@ -377,7 +543,6 @@ def set_post_visibility(request):
 
     # Public
     if(request.POST['post_vis_option'] == "public"):
-        print("-----Public-----")
         post.visibility = "Public"
         for grp in post.hide_groups.all():
             grp_obj = get_object_or_404(Group, id=grp.id)
@@ -386,7 +551,6 @@ def set_post_visibility(request):
         return redirect(reverse('global_stream'))
 
     # Group
-    print("-----Group-----")
     post.visibility = "Group"
     gid_keys = []
     for key,value in request.POST.items():
@@ -437,15 +601,19 @@ def get_post_visibility(request):
 
 # Get all groups in the database
 def get_groups(request):
-    groups = Group.objects.all()
+
+    if('for_user' in request.GET):
+        groups = request.user.profile.groups.all()
+
+    else:
+        groups = Group.objects.all()
+
     response_data = []
-    print(Group.objects.count())
     if( Group.objects.count() == 0):
         response_json = json.dumps(response_data)
         response = HttpResponse(response_json, content_type='application/json')
         response['Access-Control-Allow-Origin'] = '*'
         return response
-    print(groups)
     for group in groups:
         users_list = []
         for user in group.users.all():
@@ -465,7 +633,31 @@ def get_groups(request):
     response['Access-Control-Allow-Origin'] = '*'
     return response
 
+# Get single group with id given in request
+def get_group(request):
+    group_id = int(request.POST['group_id'])
+    group = get_object_or_404(Group, id=group_id)
 
+    response_data = []
+    users_list = []
+    for user in group.users.all():
+        user_info = {
+            'user_id': user.id,
+            'first_name': user.first_name,
+            'last_name': user.last_name
+        }
+        users_list.append(user_info)
+
+    group_info = {
+        'group_id': group.id,
+        'group_name': group.name,
+        'group_users': users_list
+    }
+    response_data.append(group_info)
+    response_json = json.dumps(response_data)
+    response = HttpResponse(response_json, content_type='application/json')
+    response['Access-Control-Allow-Origin'] = '*'
+    return response
 
 # get all users list
 def users_list_action(request):
@@ -483,19 +675,58 @@ def users_list_action(request):
     return response
 
 def add_group_action(request):
-    # print("inside set_post_visibility")
-    # for key,value in request.POST.items():
-    #     print("{} {}".format(key,value))
+
     group = Group(name=request.POST['group-name'])
     group.save()
     users = []
     for key,value in request.POST.items():
         if key.startswith("user_"):
-            print(value)
             group.users.add(get_object_or_404(User, id=int(value)))
             
     group.save()
+    request.user.profile.groups.add(group)
 
+
+    return redirect(reverse('global_stream'))
+
+
+def delete_post_action(request):
+    post_id = int(request.POST['post_id'])
+    post = get_object_or_404(Post, id=post_id)
+    if (request.user != post.user):
+        return _my_json_error_response("You are not authorized to delete others' post.", status=400)
+    post.delete()
+
+    if request.POST['page'] == "globalChannel":
+        return get_posts(request)
+    elif request.POST['page'] == "localStream":
+        return get_local(request, float(request.POST['long']) * 10000, float(request.POST['lat']) * 10000)
+
+
+def edit_group_action(request):
+    group = get_object_or_404(Group, id=int(request.POST['group_id']))
+    group.users.clear()
+    for key,value in request.POST.items():
+        if key.startswith("user_ckbx"):
+            user = get_object_or_404(User, id=int(value))
+            group.users.add(user)
+
+    return redirect(reverse('global_stream'))
+
+def addPost(request):
+    context = {}
+    if request.method == "GET":
+        context['posts'] = Post.objects.all()
+
+        context['form'] = PostForm()
+        return render(request, 'socialmedia/addTemplate.html', context)
+    post = Post()
+    post.user = request.user
+    post.time = timezone.now()
+    post.latitude = 88
+    post.longitude = 88
+    post_form = PostForm(request.POST, instance=post)
+    post_form.save()
     return redirect(reverse('global_stream'))
 
 

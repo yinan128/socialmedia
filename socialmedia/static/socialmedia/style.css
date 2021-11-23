@@ -1,5 +1,9 @@
 @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap");
 
+h3 {
+  text-align: center;
+}
+
 :root {
   --primary-color-hue: 252;
   --dark-color-lightness: 17%;
@@ -56,8 +60,8 @@ body {
 }
 
 .profile-photo {
-  width: 2.7rem;
-  aspect-ratio: 1/1;
+  width: 2.7rem !important;
+  aspect-ratio: 1/1 !important;
   border-radius: 50%;
   overflow: hidden;
 }
@@ -77,6 +81,20 @@ img {
   font-size: 0.9rem;
 }
 
+.btn_middle {
+  display: inline-block;
+  padding: var(--btn-padding);
+  font-weight: 300;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  transition: all 300ms ease;
+  font-size: 0.8rem;
+}
+
+.btn_middle:hover {
+  opacity: 0.8;
+}
+
 .btn:hover {
   opacity: 0.8;
 }
@@ -84,6 +102,7 @@ img {
 .btn-primary {
   background: var(--color-primary);
   color: white;
+
 }
 
 .btn-floatright {
@@ -97,6 +116,7 @@ img {
 
 .text-muted {
   color: var(--color-gray);
+  cursor: pointer;
 }
 
 /*================== NAVBAR =================*/
@@ -245,6 +265,37 @@ main .container .left .profile {
   width: 100%;
   text-align: center;
   padding: 1rem 0;
+  border-radius: 10rem;
+}
+
+.btn_small {
+  text-align: center;
+  width: 60px;
+  height: 45%;
+  padding: 0 0;
+  border-radius:2rem;
+  border: 2px;
+  margin-left: 2px;
+  font-size: 0.9rem;
+  background-color: hsl(252, 75%, 60%);
+  color: white;
+  cursor: pointer;
+}
+
+.btn_tiny {
+  text-align: center;
+  width: 80px;
+  height: 35%;
+  padding: 0 0;
+  border-radius:2rem;
+  border: 2px solid hsl(252, 75%, 60%);
+  background-color: hsl(0, 0%, 100%);
+  margin-left: 2px;
+  cursor: pointer;
+}
+
+.btn_tiny:hover {
+  opacity: 0.8;
 }
 
 /* ----------------------- NOTIFICATION POPUP ---------------- */
@@ -490,7 +541,7 @@ main .container .left .profile {
   z-index: 2;
 }
 
-#visibility-form, #add-group-form{
+.overlay-form {
   position: absolute;
   top: 50%;
   left: 50%;
@@ -555,6 +606,7 @@ main .container .right {
   display: flex;
   justify-content: space-between;
   margin-bottom: 1rem;
+  cursor: pointer;
 }
 
 .right .messages .category h6 {
@@ -608,6 +660,12 @@ main .container .right {
   right: 0;
 }
 
+.group-edit-btn {
+  padding: 0px;
+  float: center;
+  background-color: white;
+  cursor: pointer;
+}
 /* ================= FRIEND REQUESTS =================== */
 .right .friend-requests {
   margin-top: 1rem;

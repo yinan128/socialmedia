@@ -19,7 +19,7 @@ const Bg3 = document.querySelector('.bg-3');
 
 // current location of the user.
 var currLocation;
-var currPage = "globalChannel";
+var currPage;
 
 
 // ================ SIDEBAR ===============
@@ -225,22 +225,18 @@ Bg3.addEventListener('click', () => {
 
 // ======================== Eve events =========================
 function onloadEvents() {
-    getPosts();
+    currPage = "globalChannel";
+    refreshGlobalPosts();
     acquireCurrLocation();
-    var edit_btns = document.getElementsByClassName("uil-ellipsis-h")
-    for( var i=0; i<edit_btns.length; i++ ) {
-        edit_btns[i].addEventListener('click', show_edit_dropdown)
-    }
 
-    var edit_vis = document.getElementsByClassName("set-visib")
-    for( var i=0; i<edit_vis.length; i++ ) {
-        edit_vis[i].addEventListener('click', show_edit_visibility)
-    }
     document.onclick = function(event) {
         var a = event.target;
         vis_div = document.getElementById("visibility-form")
         grp_div = document.getElementById("add-group-form")
-        if( !(a == vis_div || vis_div.contains(a) || a == grp_div || grp_div.contains(a))) {
+        grp_edit_div = document.getElementById("edit-group-form")
+        if( !(a == vis_div || vis_div.contains(a) || 
+            a == grp_div || grp_div.contains(a) ||
+            a == grp_edit_div || grp_edit_div.contains(a))) {
             overlay_off();
         }
     }
@@ -248,13 +244,27 @@ function onloadEvents() {
     document.getElementById("group-tab").onclick = function(event) {
         document.querySelector("#group-tab").classList.toggle("active")
         document.querySelector("#following-tab").classList.toggle("active")
-        // document.querySelectorAll(".message").classList.toggle("message")
         var msgList = document.querySelectorAll(".message")
         for(var i=0; i<msgList.length; i++) {
             msgList.item(i).classList.toggle("hide")
         }
         document.querySelector("#add-group").classList.toggle("hide")
+        // update_group_list()
+        $.ajax({
+            url: "/socialmedia/get-groups",
+            datatype: "json",
+            data: {
+                "for_user": true
+            },
+            success: function(response) {
+                update_group_list(response);
+            },
+            error: updateError
+        })
+
     }
+
+    getFollow();
 
     document.getElementById("following-tab").onclick = function(event) {
         document.querySelector("#group-tab").classList.toggle("active")
@@ -288,14 +298,14 @@ function switchToLocalNews() {
     currPage = "localNews"
     // delete all middle part.
     document.getElementById("middlePart").innerHTML = '<div class="feeds" id="allNews"></div>'
+
+    //suppose the geolocation is cached.
+    let lat = parseInt(10000 * currLocation.coords.latitude).toString();
+    let lon = parseInt(10000 * currLocation.coords.longitude).toString();
+
     $.ajax({
-        url: "/socialmedia/get-local-news",
-        type: "POST",
-        data: {
-            lat: currLocation.coords.latitude,
-            long: currLocation.coords.longitude,
-            csrfmiddlewaretoken: getCSRFToken()
-        },
+        url: "/socialmedia/get-local-news/"+lon+"/"+lat+"/",
+        type: "GET",
         success: updateNews,
         error: updateError
     })
@@ -306,7 +316,6 @@ function updateNews(response) {
         $("#allNews").append(newsFormatter(this))
     })
 }
-
 
 function switchToGlobalChannel() {
     // change menu item ui color
@@ -335,39 +344,43 @@ function switchToGlobalChannel() {
     $.ajax({
         url: "/socialmedia/get-posts",
         type: "GET",
-        success: updatePosts,
+        success: updateLocalPosts,
         error: updateError
     })
 
 }
 
 
-function updatePosts(response) {
-    // todo: clean deleted posts.
-    // new post found.
-    $(response).each(function() {
-        if (this.type == "comment") {
-            return
-        }
-        let post_id = "id_post_div_"+this.id
-        if (document.getElementById(post_id) == null) {
-            $("#allFeeds").prepend(postFormatter(this))
-        }
+function switchToFollowChannel() {
+    highlightMenuItem("followChannel")
+    if (currPage == "followChannel") return
+    currPage = "followChannel"
+
+    document.getElementById("middlePart").innerHTML =
+        '<div class="create-post" id="create-post">' +
+        '<div id="editor"><script>let editor</script></div>' +
+        '<input type="submit" value="Post" class="btn btn-primary btn-floatright" onclick="postAction()">' +
+        '</div>' +
+        '<div class="feeds" id="allFeeds"></div>'
+
+    ClassicEditor
+        .create( document.querySelector( '#editor' ))
+        .then( newEditor => {
+            editor = newEditor;
+        } )
+        .catch( error => {
+            console.error( error );
+        } );
+
+    $.ajax({
+        url: "/socialmedia/get-follow",
+        type: "GET",
+        success: updateLocalPosts,
+        error: updateError
     })
 
-    // update edit button with onclick function
-    var edit_btns = document.getElementsByClassName("uil-ellipsis-h")
-    for( var i=0; i<edit_btns.length; i++ ) {
-        edit_btns[i].addEventListener('click', show_edit_dropdown)
-    }
 
-    var edit_vis = document.getElementsByClassName("set-visib")
-    for( var i=0; i<edit_vis.length; i++ ) {
-        edit_vis[i].addEventListener('click', show_edit_visibility)
-    }
 }
-
-
 
 
 function switchToLocalStream() {
@@ -405,9 +418,25 @@ function switchToLocalStream() {
     })
 }
 
+function updateFollow(response){
+    console.log("entered update follow!")
+    let messages = document.getElementById("messages")
+    messages.innerHTML = ""
+    $(response).each(function() {
+        //console.log(response.id)
+        //console.log("follower_" + response.id)
+        if (document.getElementById("follower_" + this.id) == null){
+            $("#messages").prepend(followFormatter(this))
+        }
+        
+    })
+}
 
 function updateLocalPosts(response) {
+    // prepend new posts on top.
+    let postIdFromResponse = []
     $(response).each(function() {
+        postIdFromResponse.push(this.post.id.toString())
         let post_id = "id_post_div_"+this.post.id
         if (document.getElementById(post_id) == null) {
             // new post found.
@@ -415,13 +444,49 @@ function updateLocalPosts(response) {
         } else {
             let comments = this.comments
             let father = document.getElementById("comments_post_div_" + this.post.id)
+            // prepend new comment on top.
             for (let i=0; i<comments.length; i++){
                 if (document.getElementById("id_comment_div_"+comments[i].id) == null){
                     $("#comments_post_div_"+this.post.id).prepend(commentFormatter(comments[i]))
                 }
             }
+            if (document.getElementById("comment_display_" + this.post.id).innerHTML != "Fold comments.") {
+                let commentCount = document.getElementById("comments_post_div_" + this.post.id).childElementCount
+                document.getElementById("comment_display_" + this.post.id).innerHTML = "View all " + commentCount + " comments.";
+            }
         }
     })
+
+    // remove the deleted posts along with their comments.
+    let removeList = []
+    for (let i = 0; i < document.getElementsByClassName("feed").length; i++) {
+        let feed = document.getElementsByClassName("feed")[i]
+        let postId = feed.childNodes[1].id.replace("id_post_div_", "")
+        // deal with deleted posts
+        if (!postIdFromResponse.includes(postId)) {
+            removeList.push(feed)
+        }
+    }
+    for (let i = 0; i < removeList.length; i++) {
+        removeList[i].remove()
+    }
+
+    // update edit button with onclick function
+    let edit_btns = document.getElementsByClassName("uil-ellipsis-h")
+    for( let i=0; i<edit_btns.length; i++ ) {
+        edit_btns[i].addEventListener('click', show_edit_dropdown)
+    }
+
+    let edit_vis = document.getElementsByClassName("set-visib")
+    for( let i=0; i<edit_vis.length; i++ ) {
+        edit_vis[i].addEventListener('click', show_edit_visibility)
+    }
+
+    var delete_btns = document.getElementsByClassName("delete-post")
+    for( var i=0; i<delete_btns.length; i++ ) {
+        delete_btns[i].addEventListener('click', delete_post)
+    }
+
 }
 
 function switchToStat() {
@@ -432,11 +497,11 @@ function switchToStat() {
     document.getElementById("middlePart").innerHTML =
         '<div class="stat">'
         + '<h3>SocialMedia GitHub Registerred vs. Google Registerred</h3>'
-        + '<div id="container" style="width: 600px; height: 400px"></div>'
+        + '<div id="fig1" style="width: 600px; height: 400px"></div>'
         + '<h3>8 Places where most of the posts come from</h3>'
-        + '<div id="container2" style="width: 600px; height: 400px"></div>'
+        + '<div id="fig2" style="width: 600px; height: 400px"></div>'
         + '<h3>Number of new posts published every day</h3>'
-        + '<div id="container3" style="width: 600px; height: 400px"></div>'
+        + '<div id="fig3" style="width: 600px; height: 400px"></div>'
         + '</div>'
       
     $.ajax({
@@ -454,13 +519,12 @@ function updateData(response) {
 }
 
 function updatefig1(response) {
-    var dom = document.getElementById("container");
+    var dom = document.getElementById("fig1");
     var myChart = echarts.init(dom);
     var app = {};
 
     var option;
 
-    console.log(response)
 
     var github_cnt = response.users_dis.github;
     var google_cnt = response.users_dis.google;
@@ -512,7 +576,7 @@ function updatefig1(response) {
 }
 
 function updatefig2(response) {
-    var dom = document.getElementById("container2");
+    var dom = document.getElementById("fig2");
     var myChart = echarts.init(dom);
     var app = {};
 
@@ -520,7 +584,6 @@ function updatefig2(response) {
 
     var data = response.posts_dis;
     data = JSON.parse(data.replace(/&quot;/g,'"'));
-    console.log(data)
 
     option = {
       tooltip: {
@@ -566,7 +629,7 @@ function updatefig2(response) {
 }
 
 function updatefig3(response) {
-    var chartDom = document.getElementById('container3');
+    var chartDom = document.getElementById('fig3');
     var myChart = echarts.init(chartDom);
     var app={}
     var option;
@@ -584,7 +647,11 @@ function updatefig3(response) {
       series: [
         {
           data: num,
-          type: 'line'
+          type: 'bar',
+          showBackground: true,
+          backgroundStyle: {
+            color: 'rgba(180, 180, 180, 0.2)'
+          }
         }
       ]
     };
@@ -601,14 +668,12 @@ function switchToMapit() {
     document.getElementById("middlePart").innerHTML =
         '<div class="feeds" id="mapitPlaceholder" style="width:600px;height:450px;"></div>'
 
+    //suppose the geolocation is cached.
+    let lat = parseInt(10000 * currLocation.coords.latitude).toString();
+    let lon = parseInt(10000 * currLocation.coords.longitude).toString();
     $.ajax({
-        url: "/socialmedia/get-postsNearby",
-        type: "POST",
-        data: {
-            lat: currLocation.coords.latitude,
-            long: currLocation.coords.longitude,
-            csrfmiddlewaretoken: getCSRFToken()
-        },
+        url: "/socialmedia/get-postsNearby/"+lon+"/"+lat+"/",
+        type: "GET",
         success: updateMap,
         error: updateError
     })
@@ -674,9 +739,10 @@ function postAction() {
             lat: currLocation.coords.latitude,
             long: currLocation.coords.longitude,
             visibility: 'Public',
-            csrfmiddlewaretoken: getCSRFToken()
+            csrfmiddlewaretoken: getCSRFToken(),
+            page: currPage
         },
-        success: updatePosts,
+        success: updateLocalPosts,
         error: updateError
     })
 }
@@ -701,21 +767,30 @@ function addComment(id) {
         success: updateLocalPosts,
         error: updateError
     })
-
-    // update edit button with onclick function
-    var edit_btns = document.getElementsByClassName("uil-ellipsis-h")
-    for( var i=0; i<edit_btns.length; i++ ) {
-        edit_btns[i].addEventListener('click', show_edit_dropdown)
-    }
-
-    var edit_vis = document.getElementsByClassName("set-visib")
-    for( var i=0; i<edit_vis.length; i++ ) {
-        edit_vis[i].addEventListener('click', show_edit_visibility)
-    }
 }
 
 
 // ======================== Edit Dropdown Menu =========================
+
+function delete_post() {
+    var feed_div = $(this).parentsUntil(".feeds", ".feed")[0]
+    var text_div = feed_div.getElementsByClassName("text")[0]
+    var post_id = text_div.id.split("_").at(-1)
+    $.ajax({
+        url: "/socialmedia/delete-post",
+        datatype: "json",
+        method: 'POST',
+        data: {
+            post_id: post_id,
+            csrfmiddlewaretoken: getCSRFToken(),
+            page: currPage,
+            long: currLocation.coords.longitude,
+            lat: currLocation.coords.latitude,
+        },
+        success: updateLocalPosts,
+        error: updateError
+    })
+}
 
 function show_edit_dropdown() {
     var parent_div = this.parentElement
@@ -754,13 +829,11 @@ function update_groups_options(groups) {
 
 function edit_post_vis() {
     post_id = parseInt(document.getElementById("post_vis_id").value)
-    console.log("post id is "+post_id)
     $.ajax({
         url: "/socialmedia/set-visibility",
         datatype: "json",
         success: function() {
             overlay_off();
-            updatePosts();
         },
         error: function() {
             overlay_off();
@@ -782,7 +855,6 @@ function update_vis_form(response, groups) {
             hide_group_ids.push(groups[j]['group_id'])
         }
     }
-    console.log(hide_group_ids)
     for(var i=0; i<response.length; i++) {
         gid = response[i]['group_id']
         gname = response[i]['group_name']
@@ -806,7 +878,6 @@ function update_vis_form(response, groups) {
 function overlay_on(post_id, response) {
     document.getElementById("visibility-overlay").style.display = "block"
     document.getElementById("post_vis_id").value=post_id
-    console.log(response)
     if(response[0]['visibility'] == "Private") {
         document.getElementById("public_vis").checked=false;
         document.getElementById("group_vis").checked=false;
@@ -823,8 +894,12 @@ function overlay_on(post_id, response) {
 
 
 function overlay_off() {
-    document.getElementById("visibility-overlay").style.display = "none"
-    document.getElementById("add-group-overlay").style.display = "none"
+    $(".center-overlay").each(function() {
+        this.style.display="none"
+    })
+    // document.getElementById("visibility-overlay").style.display = "none"
+    // document.getElementById("add-group-overlay").style.display = "none"
+    // document.getElementById("edit-group-overlay").style.display = "none"
 }
 
 
@@ -843,12 +918,10 @@ function get_users_list() {
 
 function add_users_list(response) {
     document.getElementById("add-group-overlay").style.display = "block"
-    console.log(response)
     form = document.getElementById("form-details")
     form.innerHTML = ""
     for (var i=0; i<response.length; i++) {
         var user = response[i]
-        console.log(user)
         var user_check = document.createElement("input")
         user_check.setAttribute("type", "checkbox")
         user_check.setAttribute("id", "user_check_"+user['user_id'])
@@ -879,7 +952,6 @@ function add_group() {
         datatype: "json",
         success: function() {
             overlay_off();
-            updatePosts();
         },
         error: function() {
             overlay_off();
@@ -893,9 +965,123 @@ function show_add_group_overlay() {
     document.getElementById("add-group-overlay").style.display = "block"
 }
 
+function update_group_list(response) {
+    let clear = document.getElementById("group-content").getElementsByClassName("message")
+    $(clear).each(function() {
+        this.remove()
+    })
+    
+    $(response).each(function() {
+        let msg_div = document.createElement("div")
+        msg_div.setAttribute("class", "message")
+        msg_div.setAttribute("id", "group_msg_"+this['group_id'])
+
+        //let pic_div = document.createElement("div")
+        //pic_div.setAttribute("class", "profile-photo")
+        //pic_div.innerHTML='<img src="./images/profile-2.jpg">'
+        //msg_div.appendChild(pic_div)
+
+        let body_div = document.createElement("div")
+        body_div.setAttribute("class", "message-body")
+        body_div.innerHTML='<h5>' + this['group_name'] + '</h5>'
+        msg_div.appendChild(body_div)
+
+        let edit_div = document.createElement("div")
+        edit_div.setAttribute("class", "btn_tiny")
+        edit_div.innerHTML='<button class="group-edit-btn" onclick="get_edit_group_info(event)">Edit</button>'
+        msg_div.appendChild(edit_div)
+
+        $("#group-content").prepend(msg_div)
+    })
+
+}
+
+function get_edit_group_info(event) {
+    msg_div = $(event.target).parentsUntil("#group-content", ".message")[0]
+    group_id = msg_div.id.split("_")[2]
+    $.ajax({
+        url: "/socialmedia/get-group",
+        datatype: "json",
+        method: 'POST',
+        data: {
+            group_id: group_id,
+            csrfmiddlewaretoken: getCSRFToken(),
+        },
+        success: show_group_edit_form,
+        error: updateError
+    })
+}
+
+function show_group_edit_form(response) {
+    document.getElementById("edit-group-overlay").style.display = "block"
+    edit_form = document.getElementById("edit-group-form")
+    edit_form.innerHTML = ""
+    group_users = []
+    $(response).each(function() {
+        let hid_group_id = document.createElement("input")
+        hid_group_id.setAttribute("type", "hidden")
+        hid_group_id.setAttribute("name", "group_id")
+        hid_group_id.setAttribute("value", this['group_id'])
+        edit_form.appendChild(hid_group_id)
+
+        let csrf = document.createElement("input")
+        csrf.setAttribute("type", "hidden")
+        csrf.setAttribute("name", "csrfmiddlewaretoken")
+        csrf.setAttribute("value", getCSRFToken())
+        edit_form.appendChild(csrf)
+
+        let form_head = document.createElement("h3")
+        form_head.innerHTML = "Edit Group " + this['group_name']
+        edit_form.appendChild(form_head)
+
+        $(this['group_users']).each(function() {
+            group_users.push(parseInt(this['user_id']))
+        })
 
 
+        $.ajax({
+            url: '/socialmedia/users-list',
+            datatype: 'json',
+            success: function(response){
+                $(response).each(function () {
+                    let user_id = "user_ckbx_"+this['user_id']
+                    let ckbx = document.createElement("input")
+                    ckbx.setAttribute("type", "checkbox")
+                    ckbx.setAttribute("id", user_id)
+                    ckbx.setAttribute("name", user_id)
+                    ckbx.setAttribute("value", this['user_id'])
+                    if(group_users.includes(parseInt(this['user_id']))) {
+                        ckbx.setAttribute("checked", true)
+                    }
+                    let label = document.createElement("label")
+                    label.setAttribute("for", user_id)
+                    label.setAttribute("class", "user_checkbox")
+                    label.innerHTML = this['first_name'] + " " + this['last_name']
+                    edit_form.appendChild(ckbx)
+                    edit_form.appendChild(label)
+                    edit_form.innerHTML += "<br>"
+                })
+                let confirm_btn = document.createElement("input")
+                confirm_btn.setAttribute("type", "submit")
+                confirm_btn.setAttribute("value", "Confirm")
+                confirm_btn.setAttribute("onsubmit", "edit_group()")
+                confirm_btn.setAttribute("style", "width: 100%;padding: 5px;")
+                edit_form.appendChild(confirm_btn)
+               
+            },
+            error: updateError,
+        })
+    })
+}
 
+function edit_group() {
+    $.ajax({
+        url: 'socialmedia/edit-group',
+        method: 'POST',
+        error: updateError
+    })
+
+}
 
 // ======================== Text Formatter =========================
 function postFormatter(response) {
@@ -903,24 +1089,18 @@ function postFormatter(response) {
     let end = luxon.DateTime.fromJSDate(new Date())
     let diff = end.diff(start, ['days', 'hours', 'minutes']).toObject()
 
-    // let result = '<div class="feed"><div class="head"><div class="user"><div class="profile-photo">'
-    //     + '<img src="./images/profile-' + response.user + '.jpg"></div><div class="ingo">'
-    //     + '<h3>' + response.firstname + ' ' + response.lastname + '</h3>'
-    //     + '<small>' + response.city + ', ' + dateDiffFormatter(diff) + '</small>'
-    //     + '</div></div><span class="edit"><i class="uil uil-ellipsis-h"></i></span></div>'
-
     let result = '<div class="feed"><div class="head"><div class="user"><div class="profile-photo">'
-        + '<img src="./images/profile-' + response.user + '.jpg"></div><div class="ingo">'
+        + '<img src="' + response.picture + '"></div><div class="ingo">'
         + '<h3>' + response.firstname + ' ' + response.lastname + '</h3>'
         + '<small>' + response.city + ', ' + dateDiffFormatter(diff) + '</small>'
         + '</div></div><div class="edit">'
 
     // Only show ellipsis button if it's mine post
-    if(response['mine'] == true) {
+    if(response['mine']) {
         result += '<button class="uil uil-ellipsis-h"></button>'
     }
 
-    result += '<div class="edit-dropdown-content"> <a class="edit-post">Edit</a> '
+    result += '<div class="edit-dropdown-content"> <a class="delete-post">Delete</a> '
         + '<a class="set-visib">Visibility</a></div> </div></div>'
         + '<div class="text" id="id_post_div_' + response.id + '">' + response.text + '</div>'
         + '<div class="action-buttons"><div class="interaction-buttons"><span><i class="uil uil-heart"></i></span><span><i class="uil uil-comment-dots"></i></span><span><i class="uil uil-share-alt"></i></span></div><div class="bookmark"><span><i class="uil uil-bookmark-full"></i></span></div></div>'
@@ -935,29 +1115,43 @@ function postFormatter(response) {
 function postWithCommentsFormatter(response) {
     let post = response.post
     let comments = response.comments
-    let result = '<div class="feed"><div class="head"><div class="user"><div class="profile-photo">'
-        + '<img src="./images/profile-' + post.user + '.jpg"></div><div class="ingo">'
-        + '<h3>' + post.firstname + ' ' + post.lastname + '</h3>'
-        + '<small>' + post.city + ', 15 MINUTES AGO</small>'
-        + '</div></div><span class="edit"><i class="uil uil-ellipsis-h"></i></span></div>'
-        + '<div class="text" id="id_post_div_' + post.id + '">' + post.text + '</div>'
+    let button;
+    if (post.follow == '1'){
+        button = '<div  style="display:inline-block; margin-left: 10px;" class="follow_' + post.userid + '"><button class="btn_small" onClick="unfollow(' + post.userid + ')">Unfollow</button></div>'
+    }else{
+        button = '<div  style="display:inline-block; margin-left: 10px;" class="follow_' + post.userid + '"><button class="btn_small" onClick="follow(' + post.userid + ')">Follow</button></div>'
+    }
+    let start = luxon.DateTime.fromJSDate(new Date(post.created_time))
+    let end = luxon.DateTime.fromJSDate(new Date())
+    let diff = end.diff(start, ['days', 'hours', 'minutes']).toObject()
 
-        + '<div class="action-buttons"><div class="interaction-buttons"><span><i class="uil uil-heart"></i></span><span><i class="uil uil-comment-dots"></i></span><span><i class="uil uil-share-alt"></i></span></div><div class="bookmark"><span><i class="uil uil-bookmark-full"></i></span></div></div>'
-        + '<div class="liked-by"><span><img src="./images/profile-10.jpg"></span><span><img src="./images/profile-4.jpg"></span><span><img src="./images/profile-15.jpg"></span><p>Liked by <b>UserC</b> and <b>4 others</b></p></div>'
+    let result = '<div class="feed"><div class="head"><div class="user"><div class="profile-photo">'
+        + '<img src="' + post.picture + '"></div><div class="ingo">'
+        + '<h3>' + post.firstname + ' ' + post.lastname + button + '</h3>' 
+
+        + '<small>' + post.city + ', ' + dateDiffFormatter(diff) + '</small>'
+        + '</div></div><div class="edit">' 
+
+        if(post['mine']) {
+            result += '<button class="uil uil-ellipsis-h"></button>'
+        }
+
+        result += '<div class="edit-dropdown-content"> <a class="delete-post">Delete</a> '
+        + '<a class="set-visib">Visibility</a></div> </div></div>'
+        + '<div class="text" id="id_post_div_' + post.id + '">' + post.text + '</div>'
 
         + '<div id="comment_display_' + post.id + '" class="comments text-muted" onclick="displayComments(' + post.id + ')">View all ' + comments.length + ' comments</div>'
         + '<div id="comments_post_div_' + post.id + '" style="display:none">'
 
     for (let i = 0; i<comments.length; i += 1){
         let comment = comments[i]
-        console.log(comment.text)
-        let comment_result = '<div class="text" id="id_comment_div_' + comment.id + '">' + comment.text +
-        '<h3>' + comment.firstname + ' ' + comment.lastname + '</h3></div>'
+        let comment_result = '<div class="text" id="id_comment_div_' + comment.id + '"><small class="comments text-muted" style="color:grey;">' + comment.firstname + ' ' + comment.lastname + ':   </small>' + comment.text +
+        '</div>'
         result += comment_result
     }
 
-    result += '</div><input type="text" name="new_comment" id="id_comment_input_text_' + post.id + '">' +
-    '<button id="id_comment_button_' + post.id + '" onclick="addComment(' + post.id + ')">Add Comment</button></div>'
+    result += '</div><input style="border:1px solid #a1a1a1; width: 400px; height: 25px" type="text" name="new_comment" id="id_comment_input_text_' + post.id + '">' +
+    '<button class="btn_tiny" id="id_comment_button_' + post.id + '" onclick="addComment(' + post.id + ')">Comment</button></div>'
 
     return result
 }
@@ -1001,12 +1195,24 @@ function dateDiffFormatter(diff) {
 }
 
 function commentFormatter(comment){
-    console.log(comment)
-    let result = '<div class="text" id="id_comment_div_' + comment.id + '">' + comment.text +
-    '<h3>' + comment.firstname + ' ' + comment.lastname + '</h3></div>'
+    //let result = '<div class="text" id="id_comment_div_' + comment.id + '">' + comment.text +
+    //'<h3>' + comment.firstname + ' ' + comment.lastname + '</h3></div>'
+    let result = '<div class="text" id="id_comment_div_' + comment.id + '"><small class="comments text-muted" style="color:grey;">' + comment.firstname + ' ' + comment.lastname + ':   </small>' + comment.text +
+        '</div>'
     return result
 }
 
+function followFormatter(follow){
+    let result = '<div class="message" id="follower_' + follow.id + '" >' 
+                + '<div class="profile-photo">'
+                + '<img src="' + follow.picture + '">'
+                + '</div>'
+                + '<div class="message-body">'
+                + '<h5>' + follow.firstname + ' ' + follow.lastname + '</h5>'
+                + '</div>'
+                + '</div>'
+    return result
+}
 
 // ======================== HELPERS =========================
 function getCSRFToken() {
@@ -1067,15 +1273,110 @@ function foldComments(post_id) {
     document.getElementById("comment_display_" + post_id).setAttribute('onclick', "displayComments(" + post_id + ")");
 }
 
-
-// get posts
-function getPosts() {
+//get following
+function getFollow() {
     $.ajax({
-        url: "/socialmedia/get-posts",
+        url: "/socialmedia/get-follows",
         datatype: "json",
-        success: updatePosts,
+        success: updateFollow,
         error: updateError
     })
+}
+
+
+// called by intervals.
+function refresh() {
+    //getFollow()
+    if (currPage == "globalChannel") {
+        refreshGlobalPosts()
+    } else if (currPage == "localStream") {
+        refreshLocalPosts()
+    } else if (currPage == "localNews") {
+        refreshLocalNews()
+    } else if (currPage == "followChannel") {
+        refreshFollowStream()
+    }
+}
+
+// get posts
+function refreshGlobalPosts() {
+    $.ajax({
+        url: "/socialmedia/get-posts",
+        type: "GET",
+        success: updateLocalPosts,
+        error: updateError
+    })
+}
+
+function refreshLocalPosts() {
+    let lat = parseInt(10000 * currLocation.coords.latitude).toString();
+    let lon = parseInt(10000 * currLocation.coords.longitude).toString();
+
+    $.ajax({
+        url: "/socialmedia/get-local/"+lon+"/"+lat+"/",
+        type: "GET",
+        success: updateLocalPosts,
+        error: updateError
+    })
+}
+
+function refreshLocalNews() {
+    //suppose the geolocation is cached.
+    let lat = parseInt(10000 * currLocation.coords.latitude).toString();
+    let lon = parseInt(10000 * currLocation.coords.longitude).toString();
+
+    $.ajax({
+        url: "/socialmedia/get-local-news/"+lon+"/"+lat+"/",
+        type: "GET",
+        success: updateNews,
+        error: updateError
+    })
+}
+
+function refreshFollowStream() {
+    $.ajax({
+        url: "/socialmedia/get-follow",
+        type: "GET",
+        success: updateLocalPosts,
+        error: updateError
+    })
+}
+
+function follow(id){
+    let buttons = document.getElementsByClassName('follow_'+id)
+    for (let i=0; i<buttons.length; i++){
+        let button = buttons[i]
+        button.innerHTML = '<span>Followed</span>'
+    }
+    $.ajax({
+        url: "/socialmedia/follow/"+id + "/",
+        datatype: "json",
+        success: function(){},
+        error: updateError
+    })
+}
+
+function unfollow(id){
+    let buttons = document.getElementsByClassName('follow_'+id)
+    for (let i=0; i<buttons.length; i++){
+        let button = buttons[i]
+        button.innerHTML = '<span>Unfollowed</span>'
+    }
+    $.ajax({
+        url: "/socialmedia/unfollow/"+id+"/",
+        datatype: "json",
+        success: function(){},
+        error: updateError
+    })
+}
+
+function focusToPostInput() {
+    if (currPage == "globalChannel" || currPage == "localStream") {
+        document.getElementsByClassName("ck ck-content ck-editor__editable ck-rounded-corners ck-editor__editable_inline ck-blurred")[0].focus()
+    } else {
+        switchToGlobalChannel()
+    }
+
 }
 
 // END

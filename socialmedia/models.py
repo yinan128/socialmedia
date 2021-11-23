@@ -12,10 +12,8 @@ class Comment(models.Model):
     # parent_post = models.ForeignKey(Post)
     time = models.DateTimeField()
 
-
-
 class Group(models.Model):
-    name = models.CharField(max_length=40)
+    name = models.CharField(max_length=40, default="Default")
     users = models.ManyToManyField(User, related_name="users")
 
 
@@ -31,16 +29,17 @@ class Post(models.Model):
     longitude = models.FloatField(default=0.0)
     city = models.CharField(max_length=50)
     body = RichTextField(blank=True, null=True)
-    visibility = models.CharField(max_length=10)
+    visibility = models.CharField(max_length=10, default='Public')
     hide_groups = models.ManyToManyField(Group, default=None)
+    combined_addr = models.CharField(max_length=50)
 
 
 class Profile(models.Model):
-    user = models.ForeignKey(User, default=None, on_delete=models.PROTECT)
+    user = models.OneToOneField(User, default=None, on_delete=models.PROTECT)
     first_name = models.CharField(max_length=30)
     last_name = models.CharField(max_length=30)
     picture = models.TextField(null=True, blank=True)
     # blacklist = models.ManyToManyField(User)
-    # following = models.ManyToManyField(User)
-    groups = models.ManyToManyField(Group)
+    following = models.ManyToManyField(User, related_name='following')
+    groups = models.ManyToManyField(Group, default=None)
 
